@@ -26,8 +26,9 @@ sweep_configuration = {
         }
     }
 }
-
-sweep_id = wandb.sweep(sweep_configuration, project="act-sweep")
-print(sweep_id)
+sweep_id = input("enter sweep id")
+if not sweep_id:
+    sweep_id = wandb.sweep(sweep_configuration, project="act-sweep")
+    print(sweep_id)
 
 wandb.agent(sweep_id, main)  
