@@ -1,6 +1,7 @@
 import wandb
 import subprocess
 from wandb_imitate_episodes import main
+import os
 
 sweep_configuration = {
     "method": "random",
@@ -26,9 +27,10 @@ sweep_configuration = {
         }
     }
 }
-sweep_id = input("enter sweep id")
+sweep_id = os.environ.get("SWEEP_ID")
 if not sweep_id:
     sweep_id = wandb.sweep(sweep_configuration, project="act-sweep")
     print(sweep_id)
+    os.environ["SWEEP_ID"] = sweep_id
 
 wandb.agent(sweep_id, main)  
