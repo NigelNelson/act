@@ -3,6 +3,19 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    'needle_lift2':{
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/data',
+        'num_episodes': 70,
+        'episode_len': 290,
+        'camera_names': ['image', 'wrist_image']
+    },
+    'needle_lift':{
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/data',
+        'num_episodes': 50,
+        'episode_len': 650,
+        'camera_names': ['top']
+    },
+
     'sim_transfer_cube_scripted':{
         'dataset_dir': DATA_DIR + '/sim_transfer_cube_scripted',
         'num_episodes': 50,
