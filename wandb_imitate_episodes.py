@@ -30,14 +30,14 @@ def main(wandb_config=None):
         set_seed(0)
 
         task_config = {
-            'dataset_dir': 'data',
+            'dataset_dir': '/data',
             'num_episodes': 70,
             'episode_len': 290,
             'camera_names': ['image', 'wrist_image']
         }
         camera_names = task_config['camera_names']
 
-        checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/act_weights/lr_{config.learning_rate}_kl_{config.kl_weight}_hidden_{config.hidden_dim}_chunk_{config.chunk_size}_b{config.batch_size}"
+        checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/act_weights/lr_{final_wandb_config.learning_rate}_kl_{final_wandb_config.kl_weight}_hidden_{final_wandb_config.hidden_dim}_chunk_{final_wandb_config.chunk_size}_b{final_wandb_config.batch_size}"
         # checkpoint_dir = "./tmppp"
         args = {
             'lr': final_wandb_config.learning_rate,  # You might want to make this configurable
