@@ -13,7 +13,7 @@ import numpy as np
 import IPython
 e = IPython.embed
 
-INPUT_OUTPUT_DIM = 4
+INPUT_OUTPUT_DIM = 7q
 
 
 def reparametrize(mu, logvar):

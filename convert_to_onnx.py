@@ -5,6 +5,7 @@ import pickle
 import argparse
 from flask import Flask, request, jsonify
 from einops import rearrange
+from torchvision import transforms
 
 from constants import SIM_TASK_CONFIGS
 from utils import set_seed
@@ -13,7 +14,7 @@ import time
 
 app = Flask(__name__)
 
-def load_model(ckpt_dir, ckpt_name, policy_config, camera_names):
+def export_to_onnx(ckpt_dir, ckpt_name, policy_config, camera_names):
     ckpt_path = os.path.join(ckpt_dir, ckpt_name)
     policy = ACTPolicy(policy_config)
     loading_status = policy.load_state_dict(torch.load(ckpt_path))
@@ -21,55 +22,56 @@ def load_model(ckpt_dir, ckpt_name, policy_config, camera_names):
     print(f'Loading status: {loading_status}')
     policy.cuda()
     policy.eval()
-    
-    stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
-    with open(stats_path, 'rb') as f:
-        stats = pickle.load(f)
 
-    return policy, stats
+    batch_size = 1  # As you mentioned you want batch size of 1
+    qpos_dim = 4  # Adjust this to match your robot's degrees of freedom
+    image_shape = (3, 512, 512)  # Adjust if your image dimensions are different
+    num_cameras = 2
 
-def pre_process(s_qpos, stats):
-    return (s_qpos - stats['qpos_mean']) / stats['qpos_std']
+    # Create dummy inputs
+    dummy_qpos = torch.randn(batch_size, qpos_dim).cuda()
+    dummy_image = torch.randn(batch_size, num_cameras, *image_shape).cuda()
 
-def post_process(a, stats):
-    return a * stats['action_std'] + stats['action_mean']
+    # Define a new wrapper class
+    class ONNXWrapper(torch.nn.Module):
+        def __init__(self, model):
+            super().__init__()
+            self.model = model
+            self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                std=[0.229, 0.224, 0.225])
 
-def get_image(image_data, camera_names):
-    curr_images = []
-    for cam_name in camera_names:
-        _img = np.array(image_data[cam_name])
-        curr_image = rearrange(_img, 'h w c -> c h w')
-        curr_images.append(curr_image)
-    curr_image = np.stack(curr_images, axis=0)
-    curr_image = torch.from_numpy(curr_image / 255.0).float().cuda().unsqueeze(0)
-    return curr_image
+        def forward(self, qpos, image):
+            image = self.normalize(image)
+            a_hat, is_pad_hat, (mu, logvar) = self.model.model(qpos, image, env_state=None)
+            return a_hat, is_pad_hat, mu, logvar
 
-@app.route('/inference', methods=['POST'])
-def inference():
-    start_time = time.time()
-    data = request.json
-    qpos = data['qpos']
-    image_data = data['image_data']
+    # Create an instance of the wrapper
+    onnx_wrapper = ONNXWrapper(policy).cuda()
 
-    qpos = pre_process(np.array(qpos), stats)
-    qpos = torch.from_numpy(qpos).float().cuda().unsqueeze(0)
-    curr_image = get_image(image_data, camera_names)
-    end_time = time.time()
-    print(f"Time taken to get image: {end_time - start_time}")
+    # Debugging step
+    with torch.no_grad():
+        outputs = onnx_wrapper(dummy_qpos, dummy_image)
+        print("Number of outputs:", len(outputs))
+        for i, output in enumerate(outputs):
+            if output is None:
+                continue
+            print(f"Output {i} shape:", output.shape)
 
-    with torch.inference_mode():
-        start_timne = time.time()
-        all_actions = policy(qpos, curr_image)
-        end_time = time.time()
-        print(f"Time taken to get action: {end_time - start_time}")
-        # raw_action = all_actions[:, 0]  # We're only interested in the first action
-        raw_action = all_actions # We're only interested in the first action
+    # Export the model
+    # Export the model
+    torch.onnx.export(onnx_wrapper,  # The wrapper module
+                    (dummy_qpos, dummy_image),  # Model inputs
+                    "act_policy.onnx",  # Output file name
+                    export_params=True,
+                    opset_version=11,  # Use a recent opset version
+                    do_constant_folding=True,
+                    input_names=['qpos', 'image'],
+                    output_names=['a_hat', 'is_pad_hat'],
+                    dynamic_axes=None)
 
-    # raw_action = raw_action.squeeze(0).cpu().numpy()
-    raw_action = raw_action.cpu().numpy()
-    action = post_process(raw_action, stats)
 
-    return jsonify({'action': action.tolist()})
+    print("ONNX export completed successfully.")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -113,6 +115,4 @@ if __name__ == '__main__':
         "seed": args.seed
     }
 
-    policy, stats = load_model(args.ckpt_dir, 'policy_epoch_7000_seed_0.ckpt', policy_config, camera_names)
-
-    app.run(host='0.0.0.0', port=8080)
+    export_to_onnx(args.ckpt_dir, 'policy_best.ckpt', policy_config, camera_names)

@@ -57,10 +57,10 @@ class Transformer(nn.Module):
             # mask = mask.flatten(1)
 
             additional_pos_embed = additional_pos_embed.unsqueeze(1).repeat(1, bs, 1) # seq, bs, dim
-            pos_embed = torch.cat([additional_pos_embed, pos_embed], axis=0)
+            pos_embed = torch.cat([additional_pos_embed, pos_embed], dim=0)
 
-            addition_input = torch.stack([latent_input, proprio_input], axis=0)
-            src = torch.cat([addition_input, src], axis=0)
+            addition_input = torch.stack([latent_input, proprio_input], dim=0)
+            src = torch.cat([addition_input, src], dim=0)
         else:
             assert len(src.shape) == 3
             # flatten NxHWxC to HWxNxC

@@ -24,27 +24,28 @@ class EpisodicDataset(torch.utils.data.Dataset):
         sample_full_episode = False # hardcode
 
         episode_id = self.episode_ids[index]
-        dataset_path = os.path.join(self.dataset_dir, f'episode_{episode_id}.hdf5')
+        dataset_path = os.path.join(self.dataset_dir, 'hdf_dataset.hdf5')
         with h5py.File(dataset_path, 'r') as root:
-            is_sim = root.attrs['sim']
-            original_action_shape = root['/action'].shape
+            base_path = f'data/demo_{episode_id}'
+            is_sim = False
+            original_action_shape = root[f'{base_path}/action'].shape
             episode_len = original_action_shape[0]
             if sample_full_episode:
                 start_ts = 0
             else:
                 start_ts = np.random.choice(episode_len)
             # get observation at start_ts only
-            qpos = root['/observations/qpos'][start_ts]
-            qvel = root['/observations/qvel'][start_ts]
+            qpos = root[f'{base_path}/observations/qpos'][start_ts]
+            qvel = root[f'{base_path}/observations/qvel'][start_ts]
             image_dict = dict()
             for cam_name in self.camera_names:
-                image_dict[cam_name] = root[f'/observations/images/{cam_name}'][start_ts]
+                image_dict[cam_name] = root[f'{base_path}/observations/images/{cam_name}'][start_ts]
             # get all actions after and including start_ts
             if is_sim:
-                action = root['/action'][start_ts:]
+                action = root[f'{base_path}/action'][start_ts:]
                 action_len = episode_len - start_ts
             else:
-                action = root['/action'][max(0, start_ts - 1):] # hack, to make timesteps more aligned
+                action = root[f'{base_path}/action'][max(0, start_ts - 1):] # hack, to make timesteps more aligned
                 action_len = episode_len - max(0, start_ts - 1) # hack, to make timesteps more aligned
 
         self.is_sim = is_sim
@@ -79,14 +80,21 @@ class EpisodicDataset(torch.utils.data.Dataset):
 def get_norm_stats(dataset_dir, num_episodes):
     all_qpos_data = []
     all_action_data = []
-    for episode_idx in range(num_episodes):
-        dataset_path = os.path.join(dataset_dir, f'episode_{episode_idx}.hdf5')
-        with h5py.File(dataset_path, 'r') as root:
-            qpos = root['/observations/qpos'][()]
-            qvel = root['/observations/qvel'][()]
-            action = root['/action'][()]
-        all_qpos_data.append(torch.from_numpy(qpos))
-        all_action_data.append(torch.from_numpy(action))
+    dataset_path = os.path.join(dataset_dir, 'hdf_dataset.hdf5')
+    print(f"Trying to load: {dataset_path}") 
+    with h5py.File(dataset_path, 'r') as root:
+        for episode_idx in range(num_episodes):
+            base_path = f'data/demo_{episode_idx}'
+
+            qpos = root[f'{base_path}/observations/qpos'][()]
+            if len(qpos) != 165:
+                continue
+
+            qvel = root[f'{base_path}/observations/qvel'][()]
+            action = root[f'{base_path}/action'][()]
+            print(len(action))
+            all_qpos_data.append(torch.from_numpy(qpos))
+            all_action_data.append(torch.from_numpy(action))
     all_qpos_data = torch.stack(all_qpos_data)
     all_action_data = torch.stack(all_action_data)
     all_action_data = all_action_data
@@ -107,12 +115,32 @@ def get_norm_stats(dataset_dir, num_episodes):
 
     return stats
 
+def remove_bad_episodes(num_episodes, dataset_dir):
+    good_ids = []
+
+    dataset_path = os.path.join(dataset_dir, 'hdf_dataset.hdf5')
+    print(f"Trying to load: {dataset_path}") 
+    with h5py.File(dataset_path, 'r') as root:
+        for episode_idx in range(num_episodes):
+            base_path = f'data/demo_{episode_idx}'
+
+            qpos = root[f'{base_path}/observations/qpos'][()]
+            if len(qpos) != 165:
+                continue
+
+            good_ids.append(episode_idx)
+    return good_ids
+
+
 
 def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val):
     print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.8
-    shuffled_indices = np.random.permutation(num_episodes)
+    good_ids = np.array(remove_bad_episodes(num_episodes, dataset_dir))
+    # shuffle ids
+
+    shuffled_indices = np.random.permutation(good_ids)
     train_indices = shuffled_indices[:int(train_ratio * num_episodes)]
     val_indices = shuffled_indices[int(train_ratio * num_episodes):]
 

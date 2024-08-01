@@ -4,9 +4,9 @@ import pathlib
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
     'needle_lift2':{
-        'dataset_dir': '/data',
-        'num_episodes': 70,
-        'episode_len': 290,
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/robomimic/Isaac-Lift-Needle-PSM-IK-Rel-v0/',
+        'num_episodes': 150,
+        'episode_len': 165,
         'camera_names': ['image', 'wrist_image']
     },
     'needle_lift':{
