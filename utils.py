@@ -87,9 +87,6 @@ def get_norm_stats(dataset_dir, num_episodes):
             base_path = f'data/demo_{episode_idx}'
 
             qpos = root[f'{base_path}/observations/qpos'][()]
-            if len(qpos) != 165:
-                continue
-
             qvel = root[f'{base_path}/observations/qvel'][()]
             action = root[f'{base_path}/action'][()]
             print(len(action))
@@ -115,32 +112,12 @@ def get_norm_stats(dataset_dir, num_episodes):
 
     return stats
 
-def remove_bad_episodes(num_episodes, dataset_dir):
-    good_ids = []
-
-    dataset_path = os.path.join(dataset_dir, 'hdf_dataset.hdf5')
-    print(f"Trying to load: {dataset_path}") 
-    with h5py.File(dataset_path, 'r') as root:
-        for episode_idx in range(num_episodes):
-            base_path = f'data/demo_{episode_idx}'
-
-            qpos = root[f'{base_path}/observations/qpos'][()]
-            if len(qpos) != 165:
-                continue
-
-            good_ids.append(episode_idx)
-    return good_ids
-
-
 
 def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val):
     print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.8
-    good_ids = np.array(remove_bad_episodes(num_episodes, dataset_dir))
-    # shuffle ids
-
-    shuffled_indices = np.random.permutation(good_ids)
+    shuffled_indices = np.random.permutation(num_episodes)
     train_indices = shuffled_indices[:int(train_ratio * num_episodes)]
     val_indices = shuffled_indices[int(train_ratio * num_episodes):]
 
