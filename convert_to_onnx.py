@@ -24,7 +24,7 @@ def export_to_onnx(ckpt_dir, ckpt_name, policy_config, camera_names):
     policy.eval()
 
     batch_size = 1  # As you mentioned you want batch size of 1
-    qpos_dim = 4  # Adjust this to match your robot's degrees of freedom
+    qpos_dim = 7  # Adjust this to match your robot's degrees of freedom
     image_shape = (3, 512, 512)  # Adjust if your image dimensions are different
     num_cameras = 2
 
@@ -100,11 +100,11 @@ if __name__ == '__main__':
     camera_names = task_config['camera_names']
 
     policy_config = {
-        'lr': 1e-4,  # You might want to make this configurable
-        'num_queries': args.chunk_size,  # You might want to make this configurable
-        'kl_weight': args.kl_weight,  # You might want to make this configurable
-        'hidden_dim': args.hidden_dim,  # You might want to make this configurable
-        'dim_feedforward': args.dim_feedforward,  # You might want to make this configurable
+        'lr': 1e-4,  
+        'num_queries': args.chunk_size,  
+        'kl_weight': args.kl_weight, 
+        'hidden_dim': args.hidden_dim,  
+        'dim_feedforward': args.dim_feedforward,
         'lr_backbone': 1e-5,
         'backbone': 'resnet18',
         'enc_layers': 4,
