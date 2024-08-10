@@ -25,7 +25,7 @@ python3 imitate_episodes.py \
 ```bash
 python3 convert_to_onnx.py \
 --task_name needle_lift2 \
---ckpt_dir ./model_ckpts_chunk15_b64_e8k_kl100_lr4 \
+--ckpt_dir ./model_checkpoints_chunk15_b64_e8k_kl100_lr4_isaac \
 --policy_class ACT --kl_weight 100 --chunk_size 15 --hidden_dim 512 --batch_size 64 --dim_feedforward 3200 \
 --num_epochs 8000  --lr 4e-5 \
 --seed 0

@@ -115,4 +115,4 @@ if __name__ == '__main__':
         "seed": args.seed
     }
 
-    export_to_onnx(args.ckpt_dir, 'policy_best.ckpt', policy_config, camera_names)
+    export_to_onnx(args.ckpt_dir, 'policy_last.ckpt', policy_config, camera_names)
