@@ -4,5 +4,5 @@
     "kl_weight": 40,
     "batch_size": 64,
     "alpha": 0.8,
-    "lambda": 2.00
+    "lamb": 2.00
 }
