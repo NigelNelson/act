@@ -15,6 +15,7 @@ from utils import sample_box_pose, sample_insertion_pose # robot functions
 from utils import compute_dict_mean, set_seed, detach_dict # helper functions
 from policy import ACTPolicy, CNNMLPPolicy
 from visualize_episodes import save_videos
+import wandb
 
 # from sim_env import BOX_POSE
 
@@ -109,6 +110,7 @@ def main(args):
     with open(stats_path, 'wb') as f:
         pickle.dump(stats, f)
 
+    wandb.init(project="ACT-training", config=config, entity="nigelnel")
     best_ckpt_info = train_bc(train_dataloader, val_dataloader, config)
     best_epoch, min_val_loss, best_state_dict = best_ckpt_info
 
@@ -336,6 +338,8 @@ def train_bc(train_dataloader, val_dataloader, config):
     validation_history = []
     min_val_loss = np.inf
     best_ckpt_info = None
+    epoch_val_loss = 0.0
+    epoch_train_loss = 0.0
     for epoch in tqdm(range(num_epochs)):
         print(f'\nEpoch {epoch}')
         # validation
@@ -372,6 +376,7 @@ def train_bc(train_dataloader, val_dataloader, config):
         epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
         epoch_train_loss = epoch_summary['loss']
         print(f'Train loss: {epoch_train_loss:.5f}')
+        wandb.log({'train_loss': epoch_train_loss, 'val_loss': epoch_val_loss, 'epoch': epoch})
         summary_string = ''
         for k, v in epoch_summary.items():
             summary_string += f'{k}: {v.item():.3f} '

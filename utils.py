@@ -24,9 +24,9 @@ class EpisodicDataset(torch.utils.data.Dataset):
         sample_full_episode = False # hardcode
 
         episode_id = self.episode_ids[index]
-        dataset_path = os.path.join(self.dataset_dir, 'hdf_dataset.hdf5')
+        dataset_path = os.path.join(self.dataset_dir, f'data_{episode_id}.hdf5')
         with h5py.File(dataset_path, 'r') as root:
-            base_path = f'data/demo_{episode_id}'
+            base_path = f'data/demo_0'
             is_sim = False
             original_action_shape = root[f'{base_path}/action'].shape
             episode_len = original_action_shape[0]
@@ -78,37 +78,64 @@ class EpisodicDataset(torch.utils.data.Dataset):
 
 
 def get_norm_stats(dataset_dir, num_episodes):
-    all_qpos_data = []
-    all_action_data = []
-    dataset_path = os.path.join(dataset_dir, 'hdf_dataset.hdf5')
-    print(f"Trying to load: {dataset_path}") 
-    with h5py.File(dataset_path, 'r') as root:
-        for episode_idx in range(num_episodes):
-            base_path = f'data/demo_{episode_idx}'
+
+    # Lists to store the means and stds of each episode
+    action_means = []
+    action_stds = []
+    qpos_means = []
+    qpos_stds = []
+
+    example_qpos = None
+
+    for episode_idx in range(num_episodes):
+        dataset_path = os.path.join(dataset_dir, f'data_{episode_idx}.hdf5')
+        print(f"Trying to load: {dataset_path}")
+        with h5py.File(dataset_path, 'r') as root:
+            base_path = f'data/demo_0'
 
             qpos = root[f'{base_path}/observations/qpos'][()]
-            qvel = root[f'{base_path}/observations/qvel'][()]
             action = root[f'{base_path}/action'][()]
-            print(len(action))
-            all_qpos_data.append(torch.from_numpy(qpos))
-            all_action_data.append(torch.from_numpy(action))
-    all_qpos_data = torch.stack(all_qpos_data)
-    all_action_data = torch.stack(all_action_data)
-    all_action_data = all_action_data
+            print(f"Episode {episode_idx} action length: {len(action)}")
 
-    # normalize action data
-    action_mean = all_action_data.mean(dim=[0, 1], keepdim=True)
-    action_std = all_action_data.std(dim=[0, 1], keepdim=True)
-    action_std = torch.clip(action_std, 1e-2, np.inf) # clipping
+            # Calculate mean and std for this episode's action data
+            action_mean = np.mean(action, axis=0)
+            action_std = np.std(action, axis=0)
 
-    # normalize qpos data
-    qpos_mean = all_qpos_data.mean(dim=[0, 1], keepdim=True)
-    qpos_std = all_qpos_data.std(dim=[0, 1], keepdim=True)
-    qpos_std = torch.clip(qpos_std, 1e-2, np.inf) # clipping
+            # Calculate mean and std for this episode's qpos data
+            qpos_mean = np.mean(qpos, axis=0)
+            qpos_std = np.std(qpos, axis=0)
 
-    stats = {"action_mean": action_mean.numpy().squeeze(), "action_std": action_std.numpy().squeeze(),
-             "qpos_mean": qpos_mean.numpy().squeeze(), "qpos_std": qpos_std.numpy().squeeze(),
-             "example_qpos": qpos}
+            # Store the means and stds for this episode
+            action_means.append(action_mean)
+            action_stds.append(action_std)
+            qpos_means.append(qpos_mean)
+            qpos_stds.append(qpos_std)
+
+            if example_qpos is None:
+                example_qpos = qpos
+
+    # Convert the lists to numpy arrays
+    action_means = np.array(action_means)
+    action_stds = np.array(action_stds)
+    qpos_means = np.array(qpos_means)
+    qpos_stds = np.array(qpos_stds)
+
+    # Calculate the overall mean and std across all episodes
+    action_mean = torch.tensor(np.mean(action_means, axis=0))
+    action_std = torch.tensor(np.mean(action_stds, axis=0))
+    action_std = torch.clip(action_std, 1e-2, np.inf)  # clipping to avoid very small std
+
+    qpos_mean = torch.tensor(np.mean(qpos_means, axis=0))
+    qpos_std = torch.tensor(np.mean(qpos_stds, axis=0))
+    qpos_std = torch.clip(qpos_std, 1e-2, np.inf)  # clipping to avoid very small std
+
+    stats = {
+        "action_mean": action_mean.numpy(),
+        "action_std": action_std.numpy(),
+        "qpos_mean": qpos_mean.numpy(),
+        "qpos_std": qpos_std.numpy(),
+        "example_qpos": example_qpos
+    }
 
     return stats
 
