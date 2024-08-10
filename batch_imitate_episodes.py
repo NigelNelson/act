@@ -163,14 +163,14 @@ def main(json_config):
 
     # Check if there's a checkpoint to resume from
     latest_ckpt = find_latest_checkpoint(ckpt_dir, seed)
+    grads = None
     if latest_ckpt:
-        start_epoch, train_history, validation_history, best_ckpt_info = load_checkpoint(latest_ckpt, policy, optimizer)
+        start_epoch, train_history, validation_history, best_ckpt_info, grads = load_checkpoint(latest_ckpt, policy, optimizer)
         print(f'Resuming from epoch {start_epoch}')
 
     # GrokFast
     alpha = json_config.alpha
     lamb = json_config.lamb
-    grads = None
 
     for epoch in tqdm(range(start_epoch, num_epochs)):
         print(f'\nEpoch {epoch}')
@@ -213,7 +213,7 @@ def main(json_config):
 
             # Save checkpoint every 250 steps
             if (batch_idx + 1) % 250 == 0:
-                save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed)
+                save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
 
         epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
@@ -305,14 +305,15 @@ def plot_history(train_history, validation_history, num_epochs, ckpt_dir, seed):
     print(f'Saved plots to {ckpt_dir}')
 
 
-def save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed):
+def save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads):
     checkpoint = {
         'epoch': epoch,
         'policy_state_dict': policy.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'train_history': train_history,
         'validation_history': validation_history,
-        'best_ckpt_info': best_ckpt_info
+        'best_ckpt_info': best_ckpt_info,
+        'grads': grads
     }
     ckpt_path = os.path.join(ckpt_dir, f'checkpoint_epoch_{epoch}_seed_{seed}.pth')
     torch.save(checkpoint, ckpt_path)
@@ -324,7 +325,7 @@ def load_checkpoint(ckpt_path, policy, optimizer):
     policy.load_state_dict(checkpoint['policy_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     return (checkpoint['epoch'], checkpoint['train_history'], 
-            checkpoint['validation_history'], checkpoint['best_ckpt_info'])
+            checkpoint['validation_history'], checkpoint['best_ckpt_info'], checkpoint['grads'])
 
 def find_latest_checkpoint(ckpt_dir, seed):
     checkpoints = [f for f in os.listdir(ckpt_dir) if f.startswith(f'checkpoint_epoch_') and f.endswith(f'_seed_{seed}.pth')]
