@@ -1,0 +1,8 @@
+{
+    "learning_rate": 0.00002,
+    "chunk_size": 20,
+    "kl_weight": 20,
+    "batch_size": 64,
+    "alpha": 0.9,
+    "lambda": 1.0
+}

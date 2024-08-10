@@ -10,6 +10,7 @@ from einops import rearrange
 
 from constants import DT
 from constants import PUPPET_GRIPPER_JOINT_OPEN
+from grokfast import gradfilter_ma, gradfilter_ema
 from utils import load_data # data functions
 from utils import sample_box_pose, sample_insertion_pose # robot functions
 from utils import compute_dict_mean, set_seed, detach_dict # helper functions
@@ -340,6 +341,11 @@ def train_bc(train_dataloader, val_dataloader, config):
     best_ckpt_info = None
     epoch_val_loss = 0.0
     epoch_train_loss = 0.0
+
+    # GrokFast
+    alpha = 0.98
+    lamb = 2.0
+    grads = None
     for epoch in tqdm(range(num_epochs)):
         print(f'\nEpoch {epoch}')
         # validation
@@ -370,6 +376,7 @@ def train_bc(train_dataloader, val_dataloader, config):
             # backward
             loss = forward_dict['loss']
             loss.backward()
+            grads = gradfilter_ema(policy, grads=grads, alpha=alpha, lamb=lamb)
             optimizer.step()
             optimizer.zero_grad()
             train_history.append(detach_dict(forward_dict))
