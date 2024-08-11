@@ -27,7 +27,7 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_{json_config.alpha}_{json_config.lamb}"
+    wandb_id = f"act_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_{json_config.alpha}_{json_config.lamb}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
