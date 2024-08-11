@@ -27,7 +27,7 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"act_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_{json_config.alpha}_{json_config.lamb}"
+    wandb_id = f"{json_config.alpha}_{json_config.lamb}_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_act_needle-lift"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -167,6 +167,8 @@ def main(json_config):
     if latest_ckpt:
         start_epoch, train_history, validation_history, best_ckpt_info, grads = load_checkpoint(latest_ckpt, policy, optimizer)
         print(f'Resuming from epoch {start_epoch}')
+    else:
+        print('Starting from scratch..\n\n')
 
     # GrokFast
     alpha = json_config.alpha
@@ -211,10 +213,6 @@ def main(json_config):
             optimizer.zero_grad()
             train_history.append(detach_dict(forward_dict))
 
-            # Save checkpoint every 250 steps
-            if (batch_idx + 1) % 250 == 0:
-                save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
-
 
         epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
         epoch_train_loss = epoch_summary['loss']
@@ -227,6 +225,10 @@ def main(json_config):
         wandb_summary['epoch'] = epoch
         wandb_summary['val_loss'] = epoch_val_loss
         wandb.log(wandb_summary)
+
+        # Save checkpoint every 250 steps
+        if epoch % 250 == 0:
+            save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
         if epoch % 500 == 0 and epoch > 3000:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
