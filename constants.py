@@ -4,7 +4,7 @@ import pathlib
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
     'needle_lift2':{
-        'dataset_dir': '/media/m2/datasets/act_training/Isaac-Lift-Needle-PSM-IK-Rel-v0',
+        'dataset_dir': '/data',
         'num_episodes': 150,
         'episode_len': 522,
         'camera_names': ['image', 'wrist_image']
