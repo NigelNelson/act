@@ -3,6 +3,8 @@ import torch
 import os
 import h5py
 from torch.utils.data import TensorDataset, DataLoader
+import pickle
+import random
 
 import IPython
 e = IPython.embed
@@ -21,19 +23,36 @@ class EpisodicDataset(torch.utils.data.Dataset):
         return len(self.episode_ids)
 
     def __getitem__(self, index):
-        sample_full_episode = False # hardcode
+        sample_full_episode = random.choice([True, False])
 
         episode_id = self.episode_ids[index]
         dataset_path = os.path.join(self.dataset_dir, f'data_{episode_id}.hdf5')
+        start_ts = 0
+        unique_idx = 0
         with h5py.File(dataset_path, 'r') as root:
             base_path = f'data/demo_0'
             is_sim = False
+
+            ##### Find the last unique action so we don't make start_ts too large #########
+            _original_action = root[f'{base_path}/action'][()]
+            num_original_actions = len(_original_action)
+            last_unique_action = _original_action[-1]
+            unique_idx = num_original_actions
+            for i in range(522 - 2, -1, -1):
+                if not np.array_equal(_original_action[i], last_unique_action):
+                    break
+                else:
+                    # print(f"Action at index {i} is the same as the last unique action")
+                    unique_idx = i
+            ################################################################################
+
+
             original_action_shape = root[f'{base_path}/action'].shape
             episode_len = original_action_shape[0]
             if sample_full_episode:
                 start_ts = 0
             else:
-                start_ts = np.random.choice(episode_len)
+                start_ts = np.random.choice(unique_idx)
             # get observation at start_ts only
             qpos = root[f'{base_path}/observations/qpos'][start_ts]
             qvel = root[f'{base_path}/observations/qvel'][start_ts]
@@ -51,8 +70,15 @@ class EpisodicDataset(torch.utils.data.Dataset):
         self.is_sim = is_sim
         padded_action = np.zeros(original_action_shape, dtype=np.float32)
         padded_action[:action_len] = action
-        is_pad = np.zeros(episode_len)
-        is_pad[action_len:] = 1
+
+        # Updated is_pad logic
+        is_pad = np.ones(episode_len)
+        is_pad[:action_len] = 0
+        # 0 0 0 0 1 1 1
+        
+        pad_idx = unique_idx - start_ts
+        pad_idx = min(pad_idx, action_len)
+        is_pad[pad_idx:] = 1
 
         # new axis for different cameras
         all_cam_images = []
@@ -89,13 +115,13 @@ def get_norm_stats(dataset_dir, num_episodes):
 
     for episode_idx in range(num_episodes):
         dataset_path = os.path.join(dataset_dir, f'data_{episode_idx}.hdf5')
-        print(f"Trying to load: {dataset_path}")
+        # print(f"Trying to load: {dataset_path}")
         with h5py.File(dataset_path, 'r') as root:
             base_path = f'data/demo_0'
 
             qpos = root[f'{base_path}/observations/qpos'][()]
             action = root[f'{base_path}/action'][()]
-            print(f"Episode {episode_idx} action length: {len(action)}")
+            # print(f"Episode {episode_idx} action length: {len(action)}")
 
             # Calculate mean and std for this episode's action data
             action_mean = np.mean(action, axis=0)
@@ -141,7 +167,7 @@ def get_norm_stats(dataset_dir, num_episodes):
 
 
 def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val):
-    print(f'\nData from: {dataset_dir}\n')
+    # print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.8
     shuffled_indices = np.random.permutation(num_episodes)
@@ -149,7 +175,14 @@ def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_s
     val_indices = shuffled_indices[int(train_ratio * num_episodes):]
 
     # obtain normalization stats for qpos and action
-    norm_stats = get_norm_stats(dataset_dir, num_episodes)
+    # norm_stats = get_norm_stats(dataset_dir, num_episodes)
+    # TODO undo hardcode
+    # Specify the file path to load the stats
+    file_path = "stats.pkl"
+
+    # Load the stats dictionary from the file
+    with open(file_path, "rb") as file:
+        norm_stats = pickle.load(file)
 
     # construct dataset and dataloader
     train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats)
