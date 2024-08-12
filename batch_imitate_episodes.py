@@ -27,7 +27,7 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"{json_config.alpha}_{json_config.lamb}_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_act_needle-lift"
+    wandb_id = f"pad_{json_config.alpha}_{json_config.lamb}_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_act_needle-lift"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -39,7 +39,7 @@ def main(json_config):
     }
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_lift_weights/lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_lift_weights/pad_lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
