@@ -1,7 +1,7 @@
 {
-    "learning_rate": 0.00005,
-    "chunk_size": 32,
-    "kl_weight": 50,
+    "learning_rate": 0.00003,
+    "chunk_size": 10,
+    "kl_weight": 10,
     "batch_size": 64,
     "alpha": 0.98,
     "lamb": 2.00

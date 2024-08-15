@@ -9,6 +9,7 @@ import random
 import IPython
 e = IPython.embed
 
+MAX_EPISODE_LENGTH = 522
 class EpisodicDataset(torch.utils.data.Dataset):
     def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats):
         super(EpisodicDataset).__init__()
@@ -33,19 +34,16 @@ class EpisodicDataset(torch.utils.data.Dataset):
             base_path = f'data/demo_0'
             is_sim = False
 
-            ##### Find the last unique action so we don't make start_ts too large #########
+            # Find the last unique action
             _original_action = root[f'{base_path}/action'][()]
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
-            for i in range(522 - 2, -1, -1):
+            for i in range(MAX_EPISODE_LENGTH - 2, -1, -1):
                 if not np.array_equal(_original_action[i], last_unique_action):
                     break
                 else:
-                    # print(f"Action at index {i} is the same as the last unique action")
                     unique_idx = i
-            ################################################################################
-
 
             original_action_shape = root[f'{base_path}/action'].shape
             episode_len = original_action_shape[0]
@@ -53,49 +51,60 @@ class EpisodicDataset(torch.utils.data.Dataset):
                 start_ts = 0
             else:
                 start_ts = np.random.choice(unique_idx)
-            # get observation at start_ts only
-            qpos = root[f'{base_path}/observations/qpos'][start_ts]
+            
+            # Get observations and actions
+            qpos = root[f'{base_path}/observations/qpos'][start_ts:]
             qvel = root[f'{base_path}/observations/qvel'][start_ts]
-            image_dict = dict()
-            for cam_name in self.camera_names:
-                image_dict[cam_name] = root[f'{base_path}/observations/images/{cam_name}'][start_ts]
-            # get all actions after and including start_ts
+            image_dict = {cam_name: root[f'{base_path}/observations/images/{cam_name}'][start_ts:] for cam_name in self.camera_names}
             if is_sim:
                 action = root[f'{base_path}/action'][start_ts:]
-                action_len = episode_len - start_ts
             else:
-                action = root[f'{base_path}/action'][max(0, start_ts - 1):] # hack, to make timesteps more aligned
-                action_len = episode_len - max(0, start_ts - 1) # hack, to make timesteps more aligned
+                action = root[f'{base_path}/action'][max(0, start_ts - 1):]
 
         self.is_sim = is_sim
-        padded_action = np.zeros(original_action_shape, dtype=np.float32)
-        padded_action[:action_len] = action
-
-        # Updated is_pad logic
-        is_pad = np.ones(episode_len)
-        is_pad[:action_len] = 0
-        # 0 0 0 0 1 1 1
         
-        pad_idx = unique_idx - start_ts
-        pad_idx = min(pad_idx, action_len)
-        is_pad[pad_idx:] = 1
+        # Pad or trim action, qpos, and image_dict to MAX_EPISODE_LENGTH
+        action_len = min(len(action), MAX_EPISODE_LENGTH)
+        padded_action = np.zeros((MAX_EPISODE_LENGTH, *original_action_shape[1:]), dtype=np.float32)
+        padded_action[:action_len] = action[:action_len]
+        if action_len < MAX_EPISODE_LENGTH:
+            padded_action[action_len:] = action[-1]  # Repeat last action
 
-        # new axis for different cameras
-        all_cam_images = []
+        padded_qpos = np.zeros((MAX_EPISODE_LENGTH, *qpos.shape[1:]), dtype=np.float32)
+        qpos_len = min(len(qpos), MAX_EPISODE_LENGTH)
+        padded_qpos[:qpos_len] = qpos[:qpos_len]
+        if qpos_len < MAX_EPISODE_LENGTH:
+            padded_qpos[qpos_len:] = qpos[-1]  # Repeat last qpos
+
+        padded_image_dict = {}
         for cam_name in self.camera_names:
-            all_cam_images.append(image_dict[cam_name])
-        all_cam_images = np.stack(all_cam_images, axis=0)
+            cam_images = image_dict[cam_name]
+            padded_cam_images = np.zeros((MAX_EPISODE_LENGTH, *cam_images.shape[1:]), dtype=np.uint8)
+            img_len = min(len(cam_images), MAX_EPISODE_LENGTH)
+            padded_cam_images[:img_len] = cam_images[:img_len]
+            if img_len < MAX_EPISODE_LENGTH:
+                padded_cam_images[img_len:] = cam_images[-1]  # Repeat last image
+            padded_image_dict[cam_name] = padded_cam_images
 
-        # construct observations
-        image_data = torch.from_numpy(all_cam_images)
-        qpos_data = torch.from_numpy(qpos).float()
+        # Update is_pad logic
+        is_pad = np.ones(MAX_EPISODE_LENGTH, dtype=bool)
+        is_pad[:action_len] = False
+        pad_idx = min(unique_idx - start_ts, action_len)
+        is_pad[pad_idx:] = True
+
+        # Prepare image data
+        all_cam_images = np.stack([padded_image_dict[cam_name] for cam_name in self.camera_names], axis=1)
+
+        # Construct observations
+        image_data = torch.from_numpy(all_cam_images).float()
+        qpos_data = torch.from_numpy(padded_qpos).float()
         action_data = torch.from_numpy(padded_action).float()
-        is_pad = torch.from_numpy(is_pad).bool()
+        is_pad = torch.from_numpy(is_pad)
 
-        # channel last
-        image_data = torch.einsum('k h w c -> k c h w', image_data)
+        # Channel last to channel first for images
+        image_data = torch.einsum('t k h w c -> t k c h w', image_data)
 
-        # normalize image and change dtype to float
+        # Normalize data
         image_data = image_data / 255.0
         action_data = (action_data - self.norm_stats["action_mean"]) / self.norm_stats["action_std"]
         qpos_data = (qpos_data - self.norm_stats["qpos_mean"]) / self.norm_stats["qpos_std"]
@@ -178,7 +187,7 @@ def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_s
     # norm_stats = get_norm_stats(dataset_dir, num_episodes)
     # TODO undo hardcode
     # Specify the file path to load the stats
-    file_path = "stats.pkl"
+    file_path = "dataset_stats_250.pkl"
 
     # Load the stats dictionary from the file
     with open(file_path, "rb") as file:
@@ -252,3 +261,10 @@ def detach_dict(d):
 def set_seed(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
+
+# dataset_dir = "C:/Users/NVIDIA/holoscan-dev/orbit-surgical-nv/logs/robomimic/Isaac-Lift-Needle-PSM-IK-Rel-v0-old"
+# stats = get_norm_stats(dataset_dir, 250)
+
+# stats_path = 'dataset_stats_250.pkl'
+# with open(stats_path, 'wb') as f:
+#     pickle.dump(stats, f)
