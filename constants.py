@@ -5,7 +5,7 @@ DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
     'needle_lift2':{
         'dataset_dir': '/data',
-        'num_episodes': 150,
+        'num_episodes': 250,
         'episode_len': 522,
         'camera_names': ['image', 'wrist_image']
     },
