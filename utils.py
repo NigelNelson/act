@@ -23,7 +23,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
         return len(self.episode_ids)
 
     def __getitem__(self, index):
-        sample_full_episode = random.choice([True, False])
+        sample_full_episode = False
 
         episode_id = self.episode_ids[index]
         dataset_path = os.path.join(self.dataset_dir, f'data_{episode_id}.hdf5')
@@ -31,7 +31,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
         unique_idx = 0
         with h5py.File(dataset_path, 'r') as root:
             base_path = f'data/demo_0'
-            is_sim = False
+            is_sim = True
 
             ##### Find the last unique action so we don't make start_ts too large #########
             _original_action = root[f'{base_path}/action'][()]
