@@ -27,7 +27,7 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"250_pad-fix_{json_config.alpha}_{json_config.lamb}_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_act_needle-lift"
+    wandb_id = f"250_pad-fix-ckpt_{json_config.alpha}_{json_config.lamb}_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_act_needle-lift"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -39,7 +39,7 @@ def main(json_config):
     }
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_lift_weights/250_pad-fix_lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_lift_weights/250_pad-fix_ckpt-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
@@ -166,6 +166,7 @@ def main(json_config):
     grads = None
     if latest_ckpt:
         start_epoch, train_history, validation_history, best_ckpt_info, grads = load_checkpoint(latest_ckpt, policy, optimizer)
+        best_epoch, min_val_loss, best_state_dict = best_ckpt_info
         print(f'Resuming from epoch {start_epoch}')
     else:
         print('Starting from scratch..\n\n')
@@ -177,6 +178,7 @@ def main(json_config):
     for epoch in tqdm(range(start_epoch, num_epochs)):
         print(f'\nEpoch {epoch}')
         wandb_summary = {}
+        is_best_val = False
         # validation
         with torch.inference_mode():
             policy.eval()
@@ -189,6 +191,7 @@ def main(json_config):
 
             epoch_val_loss = epoch_summary['loss']
             if epoch_val_loss < min_val_loss:
+                is_best_val = True
                 min_val_loss = epoch_val_loss
                 best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.state_dict()))
         print(f'Val loss:   {epoch_val_loss:.5f}')
@@ -224,6 +227,8 @@ def main(json_config):
         wandb_summary['train_loss'] = epoch_train_loss
         wandb_summary['epoch'] = epoch
         wandb_summary['val_loss'] = epoch_val_loss
+        if is_best_val:
+            wandb_summary['best_val_loss'] = min_val_loss
         wandb.log(wandb_summary)
 
         # Save checkpoint every 250 steps
