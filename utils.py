@@ -38,7 +38,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
-            for i in range(522 - 2, -1, -1):
+            for i in range(442 - 2, -1, -1):
                 if not np.array_equal(_original_action[i], last_unique_action):
                     break
                 else:
@@ -175,14 +175,14 @@ def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_s
     val_indices = shuffled_indices[int(train_ratio * num_episodes):]
 
     # obtain normalization stats for qpos and action
-    # norm_stats = get_norm_stats(dataset_dir, num_episodes)
+    norm_stats = get_norm_stats(dataset_dir, num_episodes)
     # TODO undo hardcode
     # Specify the file path to load the stats
-    file_path = "dataset_stats_250.pkl"
+    # file_path = "dataset_stats_250.pkl"
 
-    # Load the stats dictionary from the file
-    with open(file_path, "rb") as file:
-        norm_stats = pickle.load(file)
+    # # Load the stats dictionary from the file
+    # with open(file_path, "rb") as file:
+    #     norm_stats = pickle.load(file)
 
     # construct dataset and dataloader
     train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats)

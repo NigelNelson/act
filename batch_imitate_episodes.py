@@ -27,19 +27,19 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"250_pad-fix-ckpt_{json_config.alpha}_{json_config.lamb}_{json_config.learning_rate}_{json_config.kl_weight}_{json_config.chunk_size}_{json_config.batch_size}_act_needle-lift"
-    wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
+    wandb_id = f"50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb.init(project="ACT-Handover", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
     task_config = {
         'dataset_dir': '/data',
-        'num_episodes': 250,
-        'episode_len': 522,
-        'camera_names': ['image', 'wrist_image']
+        'num_episodes': 51,
+        'episode_len': 442,
+        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
     }
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_lift_weights/250_pad-fix_ckpt-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_handover_weights/{wandb_id}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
@@ -48,7 +48,7 @@ def main(json_config):
         'kl_weight': json_config.kl_weight,  # You might want to make this configurable
         'hidden_dim': 512,  # You might want to make this configurable
         "batch_size": json_config.batch_size,
-        "num_epochs": 10000,
+        "num_epochs": 5000,
         'dim_feedforward': 3200,  # You might want to make this configurable
         'lr_backbone': 1e-5,
         'backbone': 'resnet18',
@@ -61,7 +61,7 @@ def main(json_config):
         "eval": False,
         "ckpt_dir": checkpoint_dir,
         "onscreen_render": False,
-        "task_name": "needle_lift2",
+        "task_name": "needle_handover",
         "temporal_agg": True
     }
 
@@ -227,15 +227,14 @@ def main(json_config):
         wandb_summary['train_loss'] = epoch_train_loss
         wandb_summary['epoch'] = epoch
         wandb_summary['val_loss'] = epoch_val_loss
-        if is_best_val:
-            wandb_summary['best_val_loss'] = min_val_loss
+        wandb_summary['best_val_loss'] = min_val_loss
         wandb.log(wandb_summary)
 
         # Save checkpoint every 250 steps
         if epoch % 250 == 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
-        if epoch % 500 == 0 and epoch > 3000:
+        if epoch % 250 == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
