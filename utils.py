@@ -87,13 +87,14 @@ class EpisodicDataset(torch.utils.data.Dataset):
         all_cam_images = np.stack(all_cam_images, axis=0)
 
         # construct observations
-        image_data = torch.from_numpy(all_cam_images)
+        image_data = torch.from_numpy(all_cam_images.astype(np.uint8))
         qpos_data = torch.from_numpy(qpos).float()
         action_data = torch.from_numpy(padded_action).float()
         is_pad = torch.from_numpy(is_pad).bool()
 
         # channel last
         image_data = torch.einsum('k h w c -> k c h w', image_data)
+        assert image_data.dtype == torch.uint8
 
         # normalize image and change dtype to float
         image_data = image_data / 255.0
