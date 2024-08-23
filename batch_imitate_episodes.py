@@ -27,15 +27,15 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"dtype-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
-    wandb.init(project="ACT-Handover", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
+    wandb_id = f"dtype-250-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
     task_config = {
         'dataset_dir': '/data',
-        'num_episodes': 51,
-        'episode_len': 442,
-        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+        'num_episodes': 250,
+        'episode_len': 522,
+        'camera_names': ['image', 'wrist_image']
     }
     camera_names = task_config['camera_names']
 
@@ -48,7 +48,7 @@ def main(json_config):
         'kl_weight': json_config.kl_weight,  # You might want to make this configurable
         'hidden_dim': 512,  # You might want to make this configurable
         "batch_size": json_config.batch_size,
-        "num_epochs": 5000,
+        "num_epochs": 10000,
         'dim_feedforward': 3200,  # You might want to make this configurable
         'lr_backbone': 1e-5,
         'backbone': 'resnet18',
@@ -61,7 +61,7 @@ def main(json_config):
         "eval": False,
         "ckpt_dir": checkpoint_dir,
         "onscreen_render": False,
-        "task_name": "needle_handover",
+        "task_name": "needle_lift2",
         "temporal_agg": True
     }
 
@@ -234,7 +234,7 @@ def main(json_config):
         if epoch % 250 == 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
-        if epoch % 250 == 0:
+        if epoch % 500 == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
