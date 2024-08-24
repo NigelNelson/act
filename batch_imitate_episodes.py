@@ -27,19 +27,19 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"dtype-250-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"new-cam-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
     task_config = {
         'dataset_dir': '/data',
-        'num_episodes': 250,
-        'episode_len': 522,
+        'num_episodes': 51,
+        'episode_len': 155,
         'camera_names': ['image', 'wrist_image']
     }
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_handover_weights/{wandb_id}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/new-cam-needle-lift/{wandb_id}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
@@ -48,7 +48,7 @@ def main(json_config):
         'kl_weight': json_config.kl_weight,  # You might want to make this configurable
         'hidden_dim': 512,  # You might want to make this configurable
         "batch_size": json_config.batch_size,
-        "num_epochs": 10000,
+        "num_epochs": 8000,
         'dim_feedforward': 3200,  # You might want to make this configurable
         'lr_backbone': 1e-5,
         'backbone': 'resnet18',
