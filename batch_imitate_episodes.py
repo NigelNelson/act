@@ -27,14 +27,14 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"new-cam-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"new-cam2-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
     task_config = {
         'dataset_dir': '/data',
         'num_episodes': 51,
-        'episode_len': 155,
+        'episode_len': 108,
         'camera_names': ['image', 'wrist_image']
     }
     camera_names = task_config['camera_names']

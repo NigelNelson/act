@@ -12,7 +12,7 @@ SIM_TASK_CONFIGS = {
     'needle_lift2':{
         'dataset_dir': '/data',
         'num_episodes': 51,
-        'episode_len': 155,
+        'episode_len': 108,
         'camera_names': ['image', 'wrist_image']
     },
     'needle_lift':{
