@@ -5,8 +5,8 @@ DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
     'needle_handover': {
         'dataset_dir': '/data',
-        'num_episodes': 51,
-        'episode_len': 442,
+        'num_episodes': 50,
+        'episode_len': 469,
         'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
     },
     'needle_lift2':{
