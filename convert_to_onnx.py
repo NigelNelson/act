@@ -17,16 +17,16 @@ app = Flask(__name__)
 def export_to_onnx(ckpt_dir, ckpt_name, policy_config, camera_names):
     ckpt_path = os.path.join(ckpt_dir, ckpt_name)
     policy = ACTPolicy(policy_config)
-    loading_status = policy.load_state_dict(torch.load(ckpt_path))
+    loading_status = policy.load_state_dict(torch.load(ckpt_path)['best_ckpt_info'][-1])
     print(f'Loaded: {ckpt_path}')
     print(f'Loading status: {loading_status}')
     policy.cuda()
     policy.eval()
 
     batch_size = 1  # As you mentioned you want batch size of 1
-    qpos_dim = 7  # Adjust this to match your robot's degrees of freedom
+    qpos_dim = 14  # Adjust this to match your robot's degrees of freedom
     image_shape = (3, 512, 512)  # Adjust if your image dimensions are different
-    num_cameras = 2
+    num_cameras = 3
 
     # Create dummy inputs
     dummy_qpos = torch.randn(batch_size, qpos_dim).cuda()
