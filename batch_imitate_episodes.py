@@ -27,19 +27,22 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"new-cam2-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"pc-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
     task_config = {
-        'dataset_dir': '/data',
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Lift-Needle-PSM-IK-Rel-v0/d3_2024-08-24-cleaned.zarr',
         'num_episodes': 51,
-        'episode_len': 108,
-        'camera_names': ['image', 'wrist_image']
+        'episode_len': 109,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'backbone': 'pointnet'
     }
+
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/new-cam-needle-lift/{wandb_id}"
+    checkpoint_dir = f"./pc-needle-lift/first-{wandb_id}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
@@ -61,8 +64,10 @@ def main(json_config):
         "eval": False,
         "ckpt_dir": checkpoint_dir,
         "onscreen_render": False,
-        "task_name": "needle_lift2",
-        "temporal_agg": True
+        "task_name": "pc_needle_lift",
+        "temporal_agg": True,
+        'backbone': task_config['backbone'],  # Add this line
+        'use_pointcloud': task_config['use_pointcloud'],  # Add this line
     }
 
     # command line parameters
@@ -90,8 +95,6 @@ def main(json_config):
 
     # fixed parameters
     state_dim = 4 # x_pos, y_pos, z_pos, x_rot, y_rot, z_rot, gripper_bool
-    lr_backbone = 1e-5
-    backbone = 'resnet18'
     if policy_class == 'ACT':
         enc_layers = 4
         dec_layers = 7
@@ -101,15 +104,15 @@ def main(json_config):
                         'kl_weight': args['kl_weight'],
                         'hidden_dim': args['hidden_dim'],
                         'dim_feedforward': args['dim_feedforward'],
-                        'lr_backbone': lr_backbone,
-                        'backbone': backbone,
+                        'lr_backbone': args['lr_backbone'],
+                        'backbone': args['backbone'],
                         'enc_layers': enc_layers,
                         'dec_layers': dec_layers,
                         'nheads': nheads,
                         'camera_names': camera_names,
                         }
     elif policy_class == 'CNNMLP':
-        policy_config = {'lr': args['lr'], 'lr_backbone': lr_backbone, 'backbone' : backbone, 'num_queries': 1,
+        policy_config = {'lr': args['lr'], 'lr_backbone': args['lr_backbone'], 'backbone' : args['backbone'], 'num_queries': 1,
                         'camera_names': camera_names,}
     else:
         raise NotImplementedError
@@ -131,7 +134,9 @@ def main(json_config):
     }
 
 
-    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val)
+    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, 
+                                                           batch_size_train, batch_size_val, 
+                                                           use_pointcloud=args['use_pointcloud'])
 
     # save dataset stats
     if not os.path.isdir(ckpt_dir):

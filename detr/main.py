@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from .models import build_ACT_model, build_CNNMLP_model
+from .models import build_ACT_model, build_CNNMLP_model, build_backbone
 
 import IPython
 e = IPython.embed
@@ -22,8 +22,9 @@ def get_args_parser():
 
     # Model parameters
     # * Backbone
-    parser.add_argument('--backbone', default='resnet18', type=str, # will be overridden
-                        help="Name of the convolutional backbone to use")
+    parser.add_argument('--backbone', default='resnet18', type=str,
+                        choices=['resnet18', 'resnet34', 'resnet50', 'pointnet'],
+                        help="Name of the backbone to use") # will be overridden
     parser.add_argument('--dilation', action='store_true',
                         help="If true, we replace stride with dilation in the last convolutional block (DC5)")
     parser.add_argument('--position_embedding', default='sine', type=str, choices=('sine', 'learned'),

@@ -14,6 +14,8 @@ import IPython
 e = IPython.embed
 
 INPUT_OUTPUT_DIM = 7
+ACTION_DIM = 7
+STATE_DIM = 8
 
 
 def reparametrize(mu, logvar):
@@ -35,7 +37,7 @@ def get_sinusoid_encoding_table(n_position, d_hid):
 
 class DETRVAE(nn.Module):
     """ This is the DETR module that performs object detection """
-    def __init__(self, backbones, transformer, encoder, state_dim, num_queries, camera_names):
+    def __init__(self, backbone, transformer, encoder, state_dim, num_queries, camera_names):
         """ Initializes the model.
         Parameters:
             backbones: torch module of the backbone to be used. See backbone.py
@@ -54,22 +56,20 @@ class DETRVAE(nn.Module):
         self.action_head = nn.Linear(hidden_dim, state_dim)
         self.is_pad_head = nn.Linear(hidden_dim, 1)
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
-        if backbones is not None:
-            self.input_proj = nn.Conv2d(backbones[0].num_channels, hidden_dim, kernel_size=1)
-            self.backbones = nn.ModuleList(backbones)
-            self.input_proj_robot_state = nn.Linear(INPUT_OUTPUT_DIM, hidden_dim)
-        else:
-            # input_dim = INPUT_OUTPUT_DIM + 7 # robot_state + env_state
-            self.input_proj_robot_state = nn.Linear(INPUT_OUTPUT_DIM, hidden_dim)
-            self.input_proj_env_state = nn.Linear(7, hidden_dim)
-            self.pos = torch.nn.Embedding(2, hidden_dim)
-            self.backbones = None
+
+        self.backbone = backbone
+        if isinstance(backbone, nn.ModuleList):  # For image-based backbones
+            self.input_proj = nn.Conv2d(backbone[0].num_channels, hidden_dim, kernel_size=1)
+            self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
+        else:  # For PointNet backbone
+            self.input_proj = nn.Linear(backbone.num_channels, hidden_dim)
+            self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
 
         # encoder extra parameters
         self.latent_dim = 32 # final size of latent z # TODO tune
         self.cls_embed = nn.Embedding(1, hidden_dim) # extra cls token embedding
-        self.encoder_action_proj = nn.Linear(INPUT_OUTPUT_DIM, hidden_dim) # project action to embedding
-        self.encoder_joint_proj = nn.Linear(INPUT_OUTPUT_DIM, hidden_dim)  # project qpos to embedding
+        self.encoder_action_proj = nn.Linear(ACTION_DIM, hidden_dim) # project action to embedding
+        self.encoder_joint_proj = nn.Linear(state_dim, hidden_dim)  # project qpos to embedding
         self.latent_proj = nn.Linear(hidden_dim, self.latent_dim*2) # project hidden state to latent std, var
         self.register_buffer('pos_table', get_sinusoid_encoding_table(1+1+num_queries, hidden_dim)) # [CLS], qpos, a_seq
 
@@ -77,7 +77,7 @@ class DETRVAE(nn.Module):
         self.latent_out_proj = nn.Linear(self.latent_dim, hidden_dim) # project latent sample to embedding
         self.additional_pos_embed = nn.Embedding(2, hidden_dim) # learned position embedding for proprio and latent
 
-    def forward(self, qpos, image, env_state, actions=None, is_pad=None):
+    def forward(self, qpos, input_data, env_state, actions=None, is_pad=None):
         """
         qpos: batch, qpos_dim
         image: batch, num_cam, channel, height, width
@@ -115,27 +115,29 @@ class DETRVAE(nn.Module):
             latent_sample = torch.zeros([bs, self.latent_dim], dtype=torch.float32).to(qpos.device)
             latent_input = self.latent_out_proj(latent_sample)
 
-        if self.backbones is not None:
-            # Image observation features and position embeddings
+        if isinstance(self.backbone, nn.ModuleList):  # Image-based backbone
             all_cam_features = []
             all_cam_pos = []
             for cam_id, cam_name in enumerate(self.camera_names):
-                features, pos = self.backbones[0](image[:, cam_id]) # HARDCODED
-                features = features[0] # take the last layer feature
+                features, pos = self.backbone[0](input_data[:, cam_id])
+                features = features[0]
                 pos = pos[0]
                 all_cam_features.append(self.input_proj(features))
                 all_cam_pos.append(pos)
-            # proprioception features
-            proprio_input = self.input_proj_robot_state(qpos)
-            # fold camera dimension into width dimension
             src = torch.cat(all_cam_features, axis=3)
             pos = torch.cat(all_cam_pos, axis=3)
-            hs = self.transformer(src, None, self.query_embed.weight, pos, latent_input, proprio_input, self.additional_pos_embed.weight)[0]
-        else:
-            qpos = self.input_proj_robot_state(qpos)
-            env_state = self.input_proj_env_state(env_state)
-            transformer_input = torch.cat([qpos, env_state], axis=1) # seq length = 2
-            hs = self.transformer(transformer_input, None, self.query_embed.weight, self.pos.weight)[0]
+        else:  # PointNet backbone
+            features, pos = self.backbone(input_data)
+            print(f"features: {len(features)}, pos: {len(pos)}")
+            print(f"features: {features[0].shape}, pos: {pos[0].shape}")
+            features = features[0]
+            pos = pos[0]
+            src = self.input_proj(features).unsqueeze(-1)
+
+        print(f"src: {src.shape}, pos: {pos.shape}, latent_input: {latent_input.shape}")
+        proprio_input = self.input_proj_robot_state(qpos)
+        hs = self.transformer(src, None, self.query_embed.weight, pos, latent_input, proprio_input, self.additional_pos_embed.weight)[0]
+
         a_hat = self.action_head(hs)
         is_pad_hat = self.is_pad_head(hs)
         return a_hat, is_pad_hat, [mu, logvar]
@@ -229,21 +231,19 @@ def build_encoder(args):
 
 
 def build(args):
-    state_dim = INPUT_OUTPUT_DIM # TODO hardcode
+    state_dim = STATE_DIM # TODO hardcode
 
     # From state
     # backbone = None # from state for now, no need for conv nets
     # From image
-    backbones = []
     backbone = build_backbone(args)
-    backbones.append(backbone)
 
     transformer = build_transformer(args)
 
     encoder = build_encoder(args)
 
     model = DETRVAE(
-        backbones,
+        backbone,
         transformer,
         encoder,
         state_dim=state_dim,

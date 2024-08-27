@@ -80,13 +80,59 @@ class PositionEmbeddingLearned(nn.Module):
         return pos
 
 
+class PositionEmbedding3D(nn.Module):
+    def __init__(self, num_pos_feats=64, temperature=10000, normalize=False, scale=None):
+        super().__init__()
+        self.num_pos_feats = num_pos_feats
+        self.temperature = temperature
+        self.normalize = normalize
+        if scale is not None and normalize is False:
+            raise ValueError("normalize should be True if scale is passed")
+        if scale is None:
+            scale = 2 * math.pi
+        self.scale = scale
+
+    def forward(self, tensor):
+        """
+        Args:
+            tensor: Point cloud tensor of shape (B, N, 3)
+        Returns:
+            pos: tensor of shape (B, N, num_pos_feats*3) containing position encodings
+        """
+        if tensor.dim() != 3 or tensor.shape[-1] != 3:
+            raise ValueError(f"Expected tensor of shape (B, N, 3), got {tensor.shape}")
+
+        xyz = tensor
+        batch_size, num_points, _ = xyz.shape
+
+        if self.normalize:
+            xyz = xyz / xyz.abs().max(dim=1, keepdim=True)[0] * self.scale
+
+        dim_t = torch.arange(self.num_pos_feats, dtype=torch.float32, device=xyz.device)
+        dim_t = self.temperature ** (2 * (dim_t // 2) / self.num_pos_feats)
+
+        pos_x = xyz[:, :, 0, None] / dim_t
+        pos_y = xyz[:, :, 1, None] / dim_t
+        pos_z = xyz[:, :, 2, None] / dim_t
+
+        pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()), dim=3).flatten(2)
+        pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()), dim=3).flatten(2)
+        pos_z = torch.stack((pos_z[:, :, 0::2].sin(), pos_z[:, :, 1::2].cos()), dim=3).flatten(2)
+
+        pos = torch.cat((pos_x, pos_y, pos_z), dim=2)
+
+        return pos
+
+
 def build_position_encoding(args):
+    args.position_embedding = '3d'    
     N_steps = args.hidden_dim // 2
     if args.position_embedding in ('v2', 'sine'):
-        # TODO find a better way of exposing other arguments
         position_embedding = PositionEmbeddingSine(N_steps, normalize=True)
     elif args.position_embedding in ('v3', 'learned'):
         position_embedding = PositionEmbeddingLearned(N_steps)
+    elif args.position_embedding == '3d':
+        position_embedding = PositionEmbedding3D(N_steps, normalize=True)
     else:
         raise ValueError(f"not supported {args.position_embedding}")
 

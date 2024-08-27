@@ -3,6 +3,14 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    'pc_needle_lift': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Lift-Needle-PSM-IK-Rel-v0/d3_2024-08-24-cleaned.zarr',
+        'num_episodes': 51,
+        'episode_len': 109,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'backbone': 'pointnet'
+    },
     'needle_handover': {
         'dataset_dir': '/data',
         'num_episodes': 51,
