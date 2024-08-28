@@ -18,7 +18,7 @@ from einops import pack, rearrange, reduce, repeat, unpack
 from .pointnet import offset2batch
 from .rotation_conversions import matrix_to_quaternion, rotation_6d_to_matrix
 
-from .util import get_sinusoid_encoding_table, reparametrize
+from .util import get_sinusoid_encoding_table, reparametrize, KLDivergence
 
 
 
@@ -84,8 +84,14 @@ class ACT(nn.Module):
             for param in self.backbone.parameters():
                 param.requires_grad = False
 
-        self.action_loss = action_loss
-        self.klloss = klloss
+        if not action_loss:
+            self.action_loss = nn.MSELoss(reduction="none")
+        else:
+            self.action_loss = action_loss
+        if not klloss:
+            self.klloss = KLDivergence()
+        else:
+            self.klloss = klloss
 
         self.build_encoder()
         self.build_decoder()
@@ -143,37 +149,56 @@ class ACT(nn.Module):
         bs, _ = qpos.shape
         data_dict["is_training"] = is_training
 
+        # print("FORWARD ENCODER")
+        # print(f"qpos: {qpos.shape}")
+        # print(f"actions: {actions.shape}")
+        # print(f"is_pad: {is_pad.shape}")
+
         if is_training and not self.ignore_vae:
             # project action sequence to embedding dim, and concat with a CLS token
             action_embed = self.encoder_action_proj(actions)  # (bs, seq, hidden_dim)
+            # print(f"action_embed: {action_embed.shape}")
             qpos_embed = self.encoder_joint_proj(qpos)  # (bs, hidden_dim)
+            # print(f"qpos_embed: {qpos_embed.shape}")
             qpos_embed = torch.unsqueeze(qpos_embed, axis=1)  # (bs, 1, hidden_dim)
             cls_embed = self.cls_embed.weight  # (1, hidden_dim)
             cls_embed = torch.unsqueeze(cls_embed, axis=0).repeat(
                 bs, 1, 1
             )  # (bs, 1, hidden_dim)
+            # print(f"cls_embed: {cls_embed.shape}")
             encoder_input = torch.cat(
                 [cls_embed, qpos_embed, action_embed], axis=1
             )  # (bs, seq+1, hidden_dim)
+            # print(f"encoder_input: {encoder_input.shape}")
             encoder_input = encoder_input.permute(1, 0, 2)  # (seq+1, bs, hidden_dim)
             # do not mask cls token
+            # print(f"perm encoder_input: {encoder_input.shape}")
             cls_joint_is_pad = torch.full((bs, 2), False).to(
                 qpos.device
             )  # False: not a padding
+            # print(f"cls_joint_is_pad: {cls_joint_is_pad.shape}")
             is_pad = torch.cat([cls_joint_is_pad, is_pad], axis=1)  # (bs, seq+1)
             # obtain position embedding
+            # print(f"is_pad: {is_pad.shape}")
             pos_embed = self.pos_table.clone().detach()
             pos_embed = pos_embed.permute(1, 0, 2)  # (seq+1, 1, hidden_dim)
+            # print(f"pos_embed: {pos_embed.shape}")
             # query model
             encoder_output = self.encoder(
                 encoder_input, pos=pos_embed, src_key_padding_mask=is_pad
             )
             encoder_output = encoder_output[0]  # take cls output only
+            # print(f"encoder_output: {encoder_output.shape}")
             latent_info = self.latent_proj(encoder_output)
+            # print(f"latent_info: {latent_info.shape}")
             mu = latent_info[:, : self.latent_dim]
+            # print(f"mu: {mu.shape}")
             logvar = latent_info[:, self.latent_dim :]
+            # print(f"logvar: {logvar.shape}")
             latent_sample = reparametrize(mu, logvar)
+            # print(f"latent_sample: {latent_sample.shape}")
             latent_input = self.latent_out_proj(latent_sample)
+            # print(f"latent_input: {latent_input.shape}")
         else:  # test, no tgt actions
             mu = logvar = None
             latent_sample = torch.zeros([bs, self.latent_dim], dtype=torch.float32).to(
@@ -258,6 +283,12 @@ class ACT(nn.Module):
         latent_input = data_dict["latent_input"]
         proprio_input = data_dict["proprio_input"]
 
+        # print("FORWARD DECODER CALL")
+        # print(f"src: {src.shape}")
+        # print(f"pos: {pos.shape}")
+        # print(f"latent_input: {latent_input.shape}")
+        # print(f"proprio_input: {proprio_input.shape}")
+
         # (bs, num_queries, hidden_dim)
         hs = self.transformer(
             src,
@@ -292,13 +323,19 @@ class ACT(nn.Module):
 
     def forward(self, data_dict):
         # obtain latent z from action sequence
+        # print("START ENCODER")
         data_dict = self.forward_encoder(data_dict)
-
+        # print("COMPLETE ENCODER")
+        # print()
+        # print("START OBS EMBED")
         # obtain proprioception and image features
         data_dict = self.forward_obs_embed(data_dict)
-
+        # print("COMPLETE OBS EMBED")
+        # print()
+        # print("START DECODER")
         # decode action sequence from proprioception and image features
         data_dict = self.forward_decoder(data_dict)
+        # print("COMPLETE DECODER")
 
         if not data_dict["is_training"]:
             return data_dict
@@ -385,68 +422,58 @@ class ACTPCD(ACT):
         self.use_mask = use_mask
         self.bg_ratio = bg_ratio
 
-    def coord_embedding_sine(
-        self, coord, temperature=10000, normalize=False, scale=None
-    ):
+    def coord_embedding_sine(self, coord, temperature=10000, normalize=False, scale=None):
+        # coord shape: [B, 3, N] where B is batch size, N is number of points
+        B, _, N = coord.shape
         num_pos_feats = self.hidden_dim // 3
         num_pad_feats = self.hidden_dim - num_pos_feats * 3
 
-        x_embed = coord[:, 0:1]
-        y_embed = coord[:, 1:2]
-        z_embed = coord[:, 2:3]
-
-        if scale is not None and normalize is False:
-            raise ValueError("normalize should be True if scale is passed")
-        if scale is None:
-            scale = 2 * torch.pi
-
         if normalize:
-            eps = 1e-6
-            x_embed = coord[:, 0] / (coord[:, 0].max() + eps) * scale
-            y_embed = coord[:, 1] / (coord[:, 1].max() + eps) * scale
-            z_embed = coord[:, 2] / (coord[:, 2].max() + eps) * scale
+            coord = coord / (coord.max(dim=2, keepdim=True)[0] + 1e-6) * scale
 
         dim_t = torch.arange(num_pos_feats, dtype=torch.float32, device=coord.device)
         dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats)
 
-        pos_x = x_embed[..., None] / dim_t
-        pos_y = y_embed[..., None] / dim_t
-        pos_z = z_embed[..., None] / dim_t
-        pos_x = torch.stack(
-            (pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=2
-        ).flatten(1)
-        pos_y = torch.stack(
-            (pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()), dim=2
-        ).flatten(1)
-        pos_z = torch.stack(
-            (pos_z[..., 0::2].sin(), pos_z[..., 1::2].cos()), dim=2
-        ).flatten(1)
-        pos = torch.cat((pos_x, pos_y, pos_z), dim=1)
+        pos_x = coord[:, 0, :, None] / dim_t
+        pos_y = coord[:, 1, :, None] / dim_t
+        pos_z = coord[:, 2, :, None] / dim_t
 
-        pos = torch.cat((pos, torch.zeros_like(pos)[:, :num_pad_feats]), dim=1)
-        return pos
+        pos_x = torch.stack((pos_x[..., 0::2].sin(), pos_x[..., 1::2].cos()), dim=3).flatten(2)
+        pos_y = torch.stack((pos_y[..., 0::2].sin(), pos_y[..., 1::2].cos()), dim=3).flatten(2)
+        pos_z = torch.stack((pos_z[..., 0::2].sin(), pos_z[..., 1::2].cos()), dim=3).flatten(2)
+
+        pos = torch.cat((pos_x, pos_y, pos_z), dim=2)
+        pos = torch.cat((pos, torch.zeros(B, N, num_pad_feats, device=pos.device)), dim=2)
+        
+        return pos  # Shape: [B, N, hidden_dim]
 
     def forward_pcd_embed(self, pcd_dict):
+        # print("FORWARD PCD EMBED")
         features = pcd_dict["feat"]  # Assuming features are already in the required shape [BS, 1024, C]
         coord = pcd_dict["grid_coord"]
         offset = pcd_dict["offset"]
+        # print(f"features: {features.shape}")
+        # print(f"coord: {coord.shape}")
+        # print(f"offset: {offset.shape}")
 
         # Pass through backbone to get features
         features = self.backbone(pcd_dict)
+        # print(f"bb features: {features.shape}")
+
+
 
         # Compute position embeddings for the point cloud coordinates
-        pcd_pos = self.coord_embedding_sine(coord[: offset[0]])
+        pcd_pos = self.coord_embedding_sine(coord)
+        # print(f"pcd_pos: {pcd_pos.shape}")
         
         features = rearrange(
             features,
             "(b n) c -> b c 1 n",
             n=self.pcd_npoints,
         )
-        pcd_pos = repeat(
-            pcd_pos,
-            "n c -> b c 1 n",
-            b=features.shape[0],
-        )
+        # print(f"rearranged features: {features.shape}")
+        pcd_pos = rearrange(pcd_pos, "b n c -> b c 1 n")
+        # print(f"repeated pcd_pos: {pcd_pos.shape}")
         return features, pcd_pos
 
     def forward_obs_embed(self, data_dict):

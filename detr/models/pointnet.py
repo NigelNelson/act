@@ -24,7 +24,7 @@ def offset2batch(offset):
             dim=0,
         )
         .long()
-        .to(offset.device)
+        .to("cuda")
     )
 
 
@@ -80,16 +80,35 @@ class PointNet(nn.Module):
     def forward(self, input_dict):
         grid_coord = input_dict["grid_coord"]
         feat = input_dict["feat"]
-        offset = input_dict["offset"]
-        batch = offset2batch(offset)
-        sparse_shape = torch.add(torch.max(grid_coord, dim=0).values, 96).tolist()
+
+        batch_size, num_coords, num_points = grid_coord.shape
+        _, num_features, _ = feat.shape
+
+        # Create batch indices: repeat each batch index num_points times
+        batch_indices = torch.arange(batch_size).unsqueeze(1).repeat(1, num_points).reshape(-1).cuda()  # shape: [batch * num_points]
+
+        # Flatten grid coordinates correctly without permuting
+        grid_coord_flat = grid_coord.permute(0, 2, 1).reshape(-1, 3)  # Correctly flatten to [batch * num_points, 3]
+        
+        # Concatenate batch indices with grid coordinates
+        indices = torch.cat([batch_indices.unsqueeze(1), grid_coord_flat], dim=1)  # shape: [batch * num_points, 4]
+
+        # Flatten features correctly without permuting
+        feat_flat = feat.permute(0, 2, 1).reshape(-1, num_features)  # Correctly flatten to [batch * num_points, num_features]
+
+        # Calculate spatial shape as integer values
+        sparse_shape = torch.add(torch.max(grid_coord_flat, dim=0).values, 96).int().tolist()
+
+        # print(f"indices: {indices.shape}")  # should be [batch * num_points, 4]
+        # print(f"feat: {feat_flat.shape}")  # should be [batch * num_points, num_features]
+        # print(f"sparse_shape: {sparse_shape}")
+
+        # Create the SparseConvTensor
         x = spconv.SparseConvTensor(
-            features=feat,
-            indices=torch.cat(
-                [batch.unsqueeze(-1).int(), grid_coord.int()], dim=1
-            ).contiguous(),
+            features=feat_flat,
+            indices=indices.int(),
             spatial_shape=sparse_shape,
-            batch_size=batch[-1].tolist() + 1,
+            batch_size=batch_size,
         )
         x = self.conv1(x)
         x = self.conv2(x)
@@ -97,5 +116,8 @@ class PointNet(nn.Module):
         x = self.conv4(x)
         x = self.conv5(x)
         x = self.final(x)
+
+        # print(f"features: {x.features.shape}") # should be [batch * num_points, num_classes]
+        # print("END OF POINTNET")
 
         return x.features

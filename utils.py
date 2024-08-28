@@ -79,6 +79,8 @@ class EpisodicDataset(torch.utils.data.Dataset):
         padded_action = np.zeros(original_action_shape, dtype=np.float32)
         padded_action[:action_len] = action
 
+        padded_action = padded_action[:15]
+
         # Updated is_pad logic
         is_pad = np.ones(episode_len)
         is_pad[:action_len] = 0
@@ -88,13 +90,15 @@ class EpisodicDataset(torch.utils.data.Dataset):
         pad_idx = min(pad_idx, action_len)
         is_pad[pad_idx:] = 1
 
+        is_pad = is_pad[:15]
+
         if self.use_pointcloud:
             starting_cloud = root['/data/point_cloud']
-            print(f'starting_cloud: {starting_cloud.shape}')
+            # print(f'starting_cloud: {starting_cloud.shape}')
             # Load and process point cloud data
             point_cloud = root['/data/point_cloud'][start:end][start_ts]
 
-            print(f'point_cloud: {point_cloud.shape}')
+            # print(f'point_cloud: {point_cloud.shape}')
 
             # Apply unit sphere normalization
             normalized_point_cloud_xyz = apply_unit_sphere_normalization(
@@ -103,7 +107,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
                 self.norm_stats["max_distance"]
             )
 
-            input_data = torch.from_numpy(normalized_point_cloud_xyz).float()
+            input_data = normalized_point_cloud_xyz
         else:
             # Process image data as before
             all_cam_images = []
@@ -113,20 +117,22 @@ class EpisodicDataset(torch.utils.data.Dataset):
             input_data = torch.from_numpy(all_cam_images.astype(np.uint8))
             input_data = torch.einsum('k h w c -> k c h w', input_data)
             input_data = input_data / 255.0
+            input_data = input_data.numpy()
 
         # construct observations
         qpos_data = torch.from_numpy(qpos).float()
         action_data = torch.from_numpy(padded_action).float()
         is_pad = torch.from_numpy(is_pad).bool()
+        input_data = torch.from_numpy(input_data).float()
 
         action_data = (action_data - self.norm_stats["action_mean"]) / self.norm_stats["action_std"]
         qpos_data = (qpos_data - self.norm_stats["qpos_mean"]) / self.norm_stats["qpos_std"]
 
         #print shapes for all data
-        print(f'input_data: {input_data.shape}')
-        print(f'qpos_data: {qpos_data.shape}')
-        print(f'action_data: {action_data.shape}')
-        print(f'is_pad: {is_pad.shape}')
+        # print(f'input_data: {input_data.shape}')
+        # print(f'qpos_data: {qpos_data.shape}')
+        # print(f'action_data: {action_data.shape}')
+        # print(f'is_pad: {is_pad.shape}')
 
         return input_data, qpos_data, action_data, is_pad
 

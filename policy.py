@@ -95,17 +95,19 @@ class ACT3DPolicy(nn.Module):
             num_encoder_layers=4,
             num_decoder_layers=7,
             dim_feedforward=32,
-            dropout=0.1
+            dropout=0.1,
+            return_intermediate_dec=True
         )
 
     def _build_encoder(self, config):
-        encoder_layer = TransformerEncoderLayer(
+        return TransformerEncoder(
             d_model=config['hidden_dim'],
             nhead=8,
             dim_feedforward=32,
-            dropout=0.1
-        )
-        return TransformerEncoder(encoder_layer, num_layers=4)
+            dropout=0.1,
+            normalize_before=False,
+            activation='relu'
+            )
 
     def _build_optimizer(self, args_override):
         return torch.optim.AdamW(
