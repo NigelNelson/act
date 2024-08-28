@@ -15,7 +15,7 @@ from constants import PUPPET_GRIPPER_JOINT_OPEN
 from utils import load_data # data functions
 from utils import sample_box_pose, sample_insertion_pose # robot functions
 from utils import compute_dict_mean, set_seed, detach_dict # helper functions
-from policy import ACTPolicy, CNNMLPPolicy
+from policy import ACTPolicy, CNNMLPPolicy, ACT3DPolicy
 from visualize_episodes import save_videos
 from constants import SIM_TASK_CONFIGS
 import wandb
@@ -153,9 +153,9 @@ def main(json_config):
 
     set_seed(seed)
 
-    policy = make_policy(policy_class, policy_config)
+    policy = ACT3DPolicy(policy_config)
     policy.cuda()
-    optimizer = make_optimizer(policy_class, policy)
+    optimizer = policy.configure_optimizers()
 
     # Training loop evals
     start_epoch = 0

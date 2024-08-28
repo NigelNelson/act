@@ -14,7 +14,6 @@ from typing import Dict, List
 from detr.util.misc import NestedTensor, is_main_process
 
 from .position_encoding import build_position_encoding
-from .pointnet import PointNetEncoderXYZ
 
 import IPython
 e = IPython.embed
@@ -59,31 +58,30 @@ class FrozenBatchNorm2d(torch.nn.Module):
 
 
 class BackboneBase(nn.Module):
+
     def __init__(self, backbone: nn.Module, train_backbone: bool, num_channels: int, return_interm_layers: bool):
         super().__init__()
-        for name, parameter in backbone.named_parameters():
-            if not train_backbone or 'layer2' not in name and 'layer3' not in name and 'layer4' not in name:
-                parameter.requires_grad_(False)
+        # for name, parameter in backbone.named_parameters(): # only train later layers # TODO do we want this?
+        #     if not train_backbone or 'layer2' not in name and 'layer3' not in name and 'layer4' not in name:
+        #         parameter.requires_grad_(False)
         if return_interm_layers:
             return_layers = {"layer1": "0", "layer2": "1", "layer3": "2", "layer4": "3"}
         else:
             return_layers = {'layer4': "0"}
-        self.body = backbone
+        self.body = IntermediateLayerGetter(backbone, return_layers=return_layers)
         self.num_channels = num_channels
-        self.return_interm_layers = return_interm_layers
-        self.return_layers = return_layers
-        self.is_pointnet = isinstance(backbone, PointNetEncoderXYZ)
 
     def forward(self, tensor):
-        if isinstance(self.body, PointNetEncoderXYZ):
-            return {'0': self.body(tensor)}
-        
         xs = self.body(tensor)
-        out = OrderedDict()
-        for name, x in xs.items():
-            if name in self.return_layers:
-                out[self.return_layers[name]] = x
-        return out
+        return xs
+        # out: Dict[str, NestedTensor] = {}
+        # for name, x in xs.items():
+        #     m = tensor_list.mask
+        #     assert m is not None
+        #     mask = F.interpolate(m[None].float(), size=x.shape[-2:]).to(torch.bool)[0]
+        #     out[name] = NestedTensor(x, mask)
+        # return out
+
 
 class Backbone(BackboneBase):
     """ResNet backbone with frozen BatchNorm."""
@@ -91,41 +89,25 @@ class Backbone(BackboneBase):
                  train_backbone: bool,
                  return_interm_layers: bool,
                  dilation: bool):
-        if name in ('resnet18', 'resnet34', 'resnet50'):
-            backbone = getattr(torchvision.models, name)(
-                replace_stride_with_dilation=[False, False, dilation],
-                pretrained=is_main_process(), norm_layer=FrozenBatchNorm2d)
-            num_channels = 512 if name in ('resnet18', 'resnet34') else 2048
-        elif name == 'pointnet':
-            backbone = PointNetEncoderXYZ(in_channels=3, out_channels=1024)  # 3 XYZ channels
-            num_channels = 1024  # Match with out_channels of PointNetEncoderXYZ
-        else:
-            raise ValueError(f"Unknown backbone: {name}")
-        
+        backbone = getattr(torchvision.models, name)(
+            replace_stride_with_dilation=[False, False, dilation],
+            pretrained=is_main_process(), norm_layer=FrozenBatchNorm2d) # pretrained # TODO do we want frozen batch_norm??
+        num_channels = 512 if name in ('resnet18', 'resnet34') else 2048
         super().__init__(backbone, train_backbone, num_channels, return_interm_layers)
+
 
 class Joiner(nn.Sequential):
     def __init__(self, backbone, position_embedding):
         super().__init__(backbone, position_embedding)
-        self.num_channels = backbone.num_channels
 
-    def forward(self, tensor_list):
+    def forward(self, tensor_list: NestedTensor):
         xs = self[0](tensor_list)
-        out = []
+        out: List[NestedTensor] = []
         pos = []
-        for name, x in sorted(xs.items()):
+        for name, x in xs.items():
             out.append(x)
-        print(f" tensor_list: {tensor_list.shape}")
-        print(f" out len : {len(out)}")
-        print(f" out[0] shape: {out[0].shape}")
-        # Position encoding
-        if self[0].is_pointnet:
-            # For PointNet, use 3D position embedding
-            for x in out:
-                pos.append(self[1](tensor_list))  # Assuming first 3 channels are XYZ
-        else:
-            for x in out:
-                pos.append(self[1](x).to(x.dtype))
+            # position encoding
+            pos.append(self[1](x).to(x.dtype))
 
         return out, pos
 
