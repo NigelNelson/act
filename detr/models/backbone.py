@@ -14,7 +14,7 @@ from typing import Dict, List
 from detr.util.misc import NestedTensor, is_main_process
 
 from .position_encoding import build_position_encoding
-from .pointnet import PointNetEncoderXYZ
+from .pointnet_extractor import PointNetEncoderXYZ
 
 import IPython
 e = IPython.embed
@@ -96,9 +96,6 @@ class Backbone(BackboneBase):
                 replace_stride_with_dilation=[False, False, dilation],
                 pretrained=is_main_process(), norm_layer=FrozenBatchNorm2d)
             num_channels = 512 if name in ('resnet18', 'resnet34') else 2048
-        elif name == 'pointnet':
-            backbone = PointNetEncoderXYZ(in_channels=3, out_channels=1024)  # 3 XYZ channels
-            num_channels = 1024  # Match with out_channels of PointNetEncoderXYZ
         else:
             raise ValueError(f"Unknown backbone: {name}")
         
@@ -115,9 +112,9 @@ class Joiner(nn.Sequential):
         pos = []
         for name, x in sorted(xs.items()):
             out.append(x)
-        print(f" tensor_list: {tensor_list.shape}")
-        print(f" out len : {len(out)}")
-        print(f" out[0] shape: {out[0].shape}")
+        # print(f" tensor_list: {tensor_list.shape}")
+        # print(f" out len : {len(out)}")
+        # print(f" out[0] shape: {out[0].shape}")
         # Position encoding
         if self[0].is_pointnet:
             # For PointNet, use 3D position embedding
@@ -131,6 +128,8 @@ class Joiner(nn.Sequential):
 
 
 def build_backbone(args):
+    if args.backbone == 'pointnet':
+        return PointNetEncoderXYZ()
     position_embedding = build_position_encoding(args)
     train_backbone = args.lr_backbone > 0
     return_interm_layers = args.masks

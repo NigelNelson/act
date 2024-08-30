@@ -112,7 +112,7 @@ class PointNetEncoderXYZ(nn.Module):
 
     def __init__(self,
                  in_channels: int=3,
-                 out_channels: int=1024,
+                 out_channels: int=512,
                  use_layernorm: bool=False,
                  final_norm: str='none',
                  use_projection: bool=True,
@@ -128,6 +128,7 @@ class PointNetEncoderXYZ(nn.Module):
         """
         super().__init__()
         block_channel = [64, 128, 256]
+        self.num_channels = out_channels
         cprint("[PointNetEncoderXYZ] use_layernorm: {}".format(use_layernorm), 'cyan')
         cprint("[PointNetEncoderXYZ] use_final_norm: {}".format(final_norm), 'cyan')
         

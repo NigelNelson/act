@@ -37,7 +37,7 @@ def get_sinusoid_encoding_table(n_position, d_hid):
 
 class DETRVAE(nn.Module):
     """ This is the DETR module that performs object detection """
-    def __init__(self, backbone, transformer, encoder, state_dim, num_queries, camera_names):
+    def __init__(self, backbone, transformer, encoder, state_dim, num_queries, camera_names, use_pointcloud=True):
         """ Initializes the model.
         Parameters:
             backbones: torch module of the backbone to be used. See backbone.py
@@ -50,10 +50,13 @@ class DETRVAE(nn.Module):
         super().__init__()
         self.num_queries = num_queries
         self.camera_names = camera_names
+        self.use_pointcloud = use_pointcloud
+        
         self.transformer = transformer
         self.encoder = encoder
         hidden_dim = transformer.d_model
-        self.action_head = nn.Linear(hidden_dim, state_dim)
+
+        self.action_head = nn.Linear(hidden_dim, ACTION_DIM)
         self.is_pad_head = nn.Linear(hidden_dim, 1)
         self.query_embed = nn.Embedding(num_queries, hidden_dim)
 
@@ -65,6 +68,8 @@ class DETRVAE(nn.Module):
             self.input_proj = nn.Linear(backbone.num_channels, hidden_dim)
             self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
 
+        # print(f"hidden_dim: {hidden_dim}, state_dim: {state_dim}")
+
         # encoder extra parameters
         self.latent_dim = 32 # final size of latent z # TODO tune
         self.cls_embed = nn.Embedding(1, hidden_dim) # extra cls token embedding
@@ -75,7 +80,7 @@ class DETRVAE(nn.Module):
 
         # decoder extra parameters
         self.latent_out_proj = nn.Linear(self.latent_dim, hidden_dim) # project latent sample to embedding
-        self.additional_pos_embed = nn.Embedding(2, hidden_dim) # learned position embedding for proprio and latent
+        self.additional_pos_embed = nn.Embedding(2 + use_pointcloud, hidden_dim) # learned position embedding for proprio and latent
 
     def forward(self, qpos, input_data, env_state, actions=None, is_pad=None):
         """
@@ -115,7 +120,7 @@ class DETRVAE(nn.Module):
             latent_sample = torch.zeros([bs, self.latent_dim], dtype=torch.float32).to(qpos.device)
             latent_input = self.latent_out_proj(latent_sample)
 
-        if isinstance(self.backbone, nn.ModuleList):  # Image-based backbone
+        if not self.use_pointcloud:  # Image-based backbone
             all_cam_features = []
             all_cam_pos = []
             for cam_id, cam_name in enumerate(self.camera_names):
@@ -127,16 +132,21 @@ class DETRVAE(nn.Module):
             src = torch.cat(all_cam_features, axis=3)
             pos = torch.cat(all_cam_pos, axis=3)
         else:  # PointNet backbone
-            features, pos = self.backbone(input_data)
-            print(f"features: {len(features)}, pos: {len(pos)}")
-            print(f"features: {features[0].shape}, pos: {pos[0].shape}")
-            features = features[0]
-            pos = pos[0]
-            src = self.input_proj(features).unsqueeze(-1)
+            src = self.backbone(input_data)
 
-        print(f"src: {src.shape}, pos: {pos.shape}, latent_input: {latent_input.shape}")
         proprio_input = self.input_proj_robot_state(qpos)
-        hs = self.transformer(src, None, self.query_embed.weight, pos, latent_input, proprio_input, self.additional_pos_embed.weight)[0]
+
+        # print(f"src: {src.shape}, latent_input: {latent_input.shape}")
+        # print(f"qpos: {qpos.shape}, proprio_input: {proprio_input.shape}")
+        if self.use_pointcloud:
+            transformer_input = torch.stack([src, proprio_input, latent_input], axis=0)
+            # transformer_input = transformer_input.permute(1, 0, 2)  # (seq_len, bs, hidden_dim)
+            pos_embed = self.additional_pos_embed.weight.unsqueeze(1).repeat(1, bs, 1)
+            query_embed = self.query_embed.weight.unsqueeze(1).repeat(1, bs, 1)
+            # print(f"transformer_input: {transformer_input.shape}, pos_embed: {pos_embed.shape}")
+            hs = self.transformer(transformer_input, None, query_embed, pos_embed, use_pointcloud=self.use_pointcloud)[0]
+        else:
+            hs = self.transformer(src, None, self.query_embed.weight, pos, latent_input, proprio_input, self.additional_pos_embed.weight)[0]
 
         a_hat = self.action_head(hs)
         is_pad_hat = self.is_pad_head(hs)

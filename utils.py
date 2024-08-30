@@ -45,7 +45,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
-            for i in range(109 - 2, -1, -1):
+            for i in range(180 - 2, -1, -1):
                 if not np.array_equal(_original_action[i], last_unique_action):
                     break
                 else:
@@ -90,11 +90,11 @@ class EpisodicDataset(torch.utils.data.Dataset):
 
         if self.use_pointcloud:
             starting_cloud = root['/data/point_cloud']
-            print(f'starting_cloud: {starting_cloud.shape}')
+            # print(f'starting_cloud: {starting_cloud.shape}')
             # Load and process point cloud data
             point_cloud = root['/data/point_cloud'][start:end][start_ts]
 
-            print(f'point_cloud: {point_cloud.shape}')
+            # print(f'point_cloud: {point_cloud.shape}')
 
             # Apply unit sphere normalization
             normalized_point_cloud_xyz = apply_unit_sphere_normalization(
@@ -122,11 +122,11 @@ class EpisodicDataset(torch.utils.data.Dataset):
         action_data = (action_data - self.norm_stats["action_mean"]) / self.norm_stats["action_std"]
         qpos_data = (qpos_data - self.norm_stats["qpos_mean"]) / self.norm_stats["qpos_std"]
 
-        #print shapes for all data
-        print(f'input_data: {input_data.shape}')
-        print(f'qpos_data: {qpos_data.shape}')
-        print(f'action_data: {action_data.shape}')
-        print(f'is_pad: {is_pad.shape}')
+        # print shapes for all data
+        # print(f'input_data: {input_data.shape}')
+        # print(f'qpos_data: {qpos_data.shape}')
+        # print(f'action_data: {action_data.shape}')
+        # print(f'is_pad: {is_pad.shape}')
 
         return input_data, qpos_data, action_data, is_pad
 
