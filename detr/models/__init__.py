@@ -3,6 +3,7 @@ from .detr_vae import build as build_vae
 from .detr_vae import build_cnnmlp as build_cnnmlp
 from .backbone import build_backbone
 from .pointnet import PointNet
+from .pointnet_extractor import PointNetEncoderXYZ
 from .act import ACTPCD
 
 def build_ACT_model(args):

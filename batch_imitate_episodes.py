@@ -27,23 +27,23 @@ import IPython
 e = IPython.embed
 
 def main(json_config):
-    wandb_id = f"pc-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
-    wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
+    # wandb_id = f"pc-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = "debugin"
+    wandb.init(project="ACT-training", config=json_config, entity="orbit-surgical-diffusion", id=wandb_id, resume="allow")
     set_seed(0)
 
     task_config = {
-        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Lift-Needle-PSM-IK-Rel-v0/d3_2024-08-24-cleaned.zarr',
-        'num_episodes': 51,
-        'episode_len': 109,
+        'dataset_dir': '/home/mohamed/orbit-surgical-nv/logs/dp3/Isaac-Lift-Needle-PSM-IK-Rel-v0/lift_needle_d3_50_rel.zarr',
+        'num_episodes': 50,
+        'episode_len': 180,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'backbone': 'pointnet'
+        'backbone': 'dp3-pointnet'
     }
 
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"./pc-needle-lift/first-{wandb_id}"
-    # checkpoint_dir = "./tmppp"
+    checkpoint_dir = f"experiments/pc-needle-lift/{task_config['backbone']}"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
         'num_queries': json_config.chunk_size,  # You might want to make this configurable
@@ -54,7 +54,6 @@ def main(json_config):
         "num_epochs": 8000,
         'dim_feedforward': 3200,  # You might want to make this configurable
         'lr_backbone': 1e-5,
-        'backbone': 'resnet18',
         'enc_layers': 4,
         'dec_layers': 7,
         'nheads': 8,
@@ -80,14 +79,14 @@ def main(json_config):
     batch_size_val = args['batch_size']
     num_epochs = args['num_epochs']
 
-    # get task parameters
+    # # get task parameters
     is_sim = task_name[:4] == 'sim_'
-    if True: # TODO clean up
-        from constants import SIM_TASK_CONFIGS
-        task_config = SIM_TASK_CONFIGS[task_name]
-    else:
-        from aloha_scripts.constants import TASK_CONFIGS
-        task_config = TASK_CONFIGS[task_name]
+    # if True: # TODO clean up
+    #     from constants import SIM_TASK_CONFIGS
+    #     task_config = SIM_TASK_CONFIGS[task_name]
+    # else:
+    #     from aloha_scripts.constants import TASK_CONFIGS
+    #     task_config = TASK_CONFIGS[task_name]
     dataset_dir = task_config['dataset_dir']
     num_episodes = task_config['num_episodes']
     episode_len = task_config['episode_len']

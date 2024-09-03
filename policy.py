@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 import torch
 
 from detr.main import build_ACT_model_and_optimizer, build_CNNMLP_model_and_optimizer
-from detr.models import PointNet, ACTPCD
+from detr.models import PointNet, ACTPCD, PointNetEncoderXYZ
 from detr.models.transformer import Transformer, TransformerEncoder, TransformerEncoderLayer
 import IPython
 e = IPython.embed
@@ -70,7 +70,7 @@ class ACT3DPolicy(nn.Module):
         }
 
         # Initialize backbone, transformer, and encoder (simplified for brevity)
-        backbone = self._build_backbone()
+        backbone = self._build_backbone(args_override['backbone'])
         transformer = self._build_transformer(config)
         encoder = self._build_encoder(config)
 
@@ -81,12 +81,15 @@ class ACT3DPolicy(nn.Module):
             **config
         )
 
-    def _build_backbone(self):
+    def _build_backbone(self, backbone, hidden_dim=512):
         # Implement a simple backbone for point cloud processing
-        return PointNet(
-            in_channels=3,
-            num_classes=0
-        )
+        if backbone == 'pointnet':
+            return PointNet(in_channels=3, num_classes=0)
+        elif backbone == 'dp3-pointnet':
+            return PointNetEncoderXYZ(in_channels=3, out_channels=hidden_dim)
+        else:
+            raise NotImplementedError
+    
 
     def _build_transformer(self, config):
         return Transformer(

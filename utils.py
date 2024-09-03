@@ -45,7 +45,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
-            for i in range(109 - 2, -1, -1):
+            for i in range(180 - 2, -1, -1):
                 if not np.array_equal(_original_action[i], last_unique_action):
                     break
                 else:

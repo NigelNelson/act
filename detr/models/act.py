@@ -15,10 +15,12 @@ except:
 import torchvision.transforms as T
 from einops import pack, rearrange, reduce, repeat, unpack
 
-from .pointnet import offset2batch
+from .pointnet import offset2batch, PointNet
+from .pointnet_extractor import PointNetEncoderXYZ
 from .rotation_conversions import matrix_to_quaternion, rotation_6d_to_matrix
 
 from .util import get_sinusoid_encoding_table, reparametrize, KLDivergence
+
 
 
 
@@ -457,7 +459,28 @@ class ACTPCD(ACT):
         # print(f"offset: {offset.shape}")
 
         # Pass through backbone to get features
-        features = self.backbone(pcd_dict)
+        # print(pcd_dict.keys())
+        # print(self.backbone)
+        print(f"features: {features.shape}")
+        print(f"coord: {coord.shape}")
+        print(f"offset: {offset.shape}")
+        if isinstance(self.backbone, PointNet):
+            features = self.backbone(pcd_dict)
+            features = rearrange(
+                features,
+                "(b n) c -> b c 1 n",
+                n=self.pcd_npoints,
+            )
+        elif isinstance(self.backbone, PointNetEncoderXYZ):
+            x = self.backbone(features.transpose(1, 2))
+            print(f"x: {x.shape}")
+            features = rearrange(
+                x,
+                "b n c -> b c 1 n",
+                n=self.pcd_npoints,
+            )
+        else:
+            raise NotImplementedError
         # print(f"bb features: {features.shape}")
 
 
@@ -465,12 +488,10 @@ class ACTPCD(ACT):
         # Compute position embeddings for the point cloud coordinates
         pcd_pos = self.coord_embedding_sine(coord)
         # print(f"pcd_pos: {pcd_pos.shape}")
+
+        # print(f"features: {features.shape}")
         
-        features = rearrange(
-            features,
-            "(b n) c -> b c 1 n",
-            n=self.pcd_npoints,
-        )
+    
         # print(f"rearranged features: {features.shape}")
         pcd_pos = rearrange(pcd_pos, "b n c -> b c 1 n")
         # print(f"repeated pcd_pos: {pcd_pos.shape}")
