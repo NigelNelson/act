@@ -312,7 +312,7 @@ class ACT(nn.Module):
     def forward_loss(self, data_dict):
         total_kld = self.klloss(data_dict["mu"], data_dict["logvar"])
 
-        action_loss = self.action_loss(data_dict["a_hat"], data_dict["actions"])
+        action_loss = F.l1_loss(data_dict["a_hat"], data_dict["actions"], reduction="none")
         action_loss = (action_loss * ~data_dict["is_pad"].unsqueeze(-1)).mean()
 
         data_dict["action_loss"] = action_loss
