@@ -3,12 +3,31 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
-    'pc_needle_lift': {
-        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Lift-Needle-PSM-IK-Rel-v0/d3_2024-08-24-cleaned.zarr',
-        'num_episodes': 51,
-        'episode_len': 109,
+    'pc_needle_handover_back_muscle': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0/d3_2024-09-05_cleaned-even.zarr',
+        'num_episodes': 52,
+        'episode_len': 262,
         'camera_names': ['image'],
         'use_pointcloud': True,
+        'dual_arm': True,
+        'backbone': 'pointnet'
+    },
+    'pc_suture_pad': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0/d3_2024-08-28-cleaned.zarr',
+        'num_episodes': 44,
+        'episode_len': 529,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': True,
+        'backbone': 'pointnet'
+    },
+    'pc_needle_lift': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Transfer-Block-PSM-IK-Rel-v0/d3_2024-08-24-cleaned-even.zarr',
+        'num_episodes': 52,
+        'episode_len': 272,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     'needle_handover': {

@@ -53,12 +53,14 @@ class ACT3DPolicy(nn.Module):
 
     def _build_model(self, args_override):
         # Hard-coded configuration based on ACTPCD_train_config
+        qpos_dim = 16 if args_override['dual_arm'] else 8
+        action_dim = 14 if args_override['dual_arm'] else 7
         config = {
             "hidden_dim": 512,
             "num_queries": args_override['num_queries'],
             "num_cameras": 0,
-            "action_dim": 7,
-            "qpos_dim": 8,
+            "action_dim": action_dim,
+            "qpos_dim": qpos_dim,
             "env_state_dim": 0,
             "latent_dim": 32,
             "kl_weight": args_override['kl_weight'],

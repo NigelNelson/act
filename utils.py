@@ -11,7 +11,7 @@ import IPython
 e = IPython.embed
 
 class EpisodicDataset(torch.utils.data.Dataset):
-    def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats, use_pointcloud=False):
+    def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats, use_pointcloud=False, episode_len=None):
         super(EpisodicDataset).__init__()
         self.episode_ids = episode_ids
         self.dataset_dir = dataset_dir
@@ -19,6 +19,8 @@ class EpisodicDataset(torch.utils.data.Dataset):
         self.norm_stats = norm_stats
         self.is_sim = None
         self.use_pointcloud = use_pointcloud
+        assert episode_len is not None, "Episode length must be provided"
+        self.episode_len = episode_len
         self.__getitem__(0)  # initialize self.is_sim
 
     def __len__(self):
@@ -42,10 +44,12 @@ class EpisodicDataset(torch.utils.data.Dataset):
             ##### Find the last unique action so we don't make start_ts too large #########
             _original_action = root['/data/actions'][start:end]
 
+
+
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
-            for i in range(109 - 2, -1, -1):
+            for i in range(num_original_actions - 2, -1, -1):
                 if not np.array_equal(_original_action[i], last_unique_action):
                     break
                 else:
@@ -62,7 +66,6 @@ class EpisodicDataset(torch.utils.data.Dataset):
                 start_ts = np.random.choice(unique_idx)
             # get observation at start_ts only
             qpos = root['/data/joint_pos'][start:end][start_ts]
-            qvel = root['/data/joint_vel'][start:end][start_ts]
             image_dict = dict()
             # TODO: uncomment this
             # for cam_name in self.camera_names:
@@ -255,7 +258,7 @@ def get_norm_stats(dataset_dir, num_episodes, use_pointcloud=False):
     return stats
 
 
-def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val, use_pointcloud=False):
+def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val, use_pointcloud=False, episode_len=None):
     # print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.88
@@ -274,8 +277,8 @@ def load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_s
     #     norm_stats = pickle.load(file)
 
     # construct dataset and dataloader
-    train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats, use_pointcloud)
-    val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats, use_pointcloud)
+    train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats, use_pointcloud, episode_len)
+    val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats, use_pointcloud, episode_len)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
 
