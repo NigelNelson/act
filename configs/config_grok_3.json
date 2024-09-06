@@ -3,6 +3,6 @@
     "chunk_size": 15,
     "kl_weight": 10,
     "batch_size": 64,
-    "alpha": 0.99,
-    "lamb": 5.0
+    "alpha": 0.98,
+    "lamb": 2.0
 }

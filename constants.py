@@ -3,6 +3,12 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    'peg_transfer': {
+        'dataset_dir': 'C:/Users/NVIDIA/holoscan-dev/orbit-surgical-nv/logs/act/2024-08-24-Isaac-Transfer-Block-PSM-IK-Rel-v0',
+        'num_episodes': 51,
+        'episode_len': 270,
+        'camera_names': ['image', 'wrist_image']
+    },
     'needle_handover': {
         'dataset_dir': '/data',
         'num_episodes': 51,
