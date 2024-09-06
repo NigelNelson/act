@@ -29,7 +29,11 @@ e = IPython.embed
 def main(task, json_config):
     import datetime
     from constants import SIM_TASK_CONFIGS
-    wandb_id = f"{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+
+    # Get current date in format YYYY-MM-DD-HH-MM
+    date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+
+    wandb_id = f"{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}-{date}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -37,10 +41,7 @@ def main(task, json_config):
 
     camera_names = task_config['camera_names']
 
-    # Get current date in format YYYY-MM-DD-HH-MM
-    datetime = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-
-    checkpoint_dir = f"./pc-needle-lift/{datetime}-{wandb_id}"
+    checkpoint_dir = f"./pc-needle-lift/{date}-{wandb_id}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
