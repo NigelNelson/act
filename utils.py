@@ -38,7 +38,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
-            for i in range(469 - 2, -1, -1):
+            for i in range(num_original_actions - 2, -1, -1):
                 if not np.array_equal(_original_action[i], last_unique_action):
                     break
                 else:
@@ -54,8 +54,8 @@ class EpisodicDataset(torch.utils.data.Dataset):
             else:
                 start_ts = np.random.choice(unique_idx)
             # get observation at start_ts only
-            qpos = root[f'{base_path}/observations/qpos'][start_ts]
-            qvel = root[f'{base_path}/observations/qvel'][start_ts]
+            # User joint pos
+            qpos = root[f'{base_path}/observations/joint_pos'][start_ts]
             image_dict = dict()
             for cam_name in self.camera_names:
                 image_dict[cam_name] = root[f'{base_path}/observations/images/{cam_name}'][start_ts]
@@ -71,6 +71,8 @@ class EpisodicDataset(torch.utils.data.Dataset):
         padded_action = np.zeros(original_action_shape, dtype=np.float32)
         padded_action[:action_len] = action
 
+        padded_action = padded_action[:15]
+
         # Updated is_pad logic
         is_pad = np.ones(episode_len)
         is_pad[:action_len] = 0
@@ -80,10 +82,15 @@ class EpisodicDataset(torch.utils.data.Dataset):
         pad_idx = min(pad_idx, action_len)
         is_pad[pad_idx:] = 1
 
+        is_pad = is_pad[:15]
+
         # new axis for different cameras
         all_cam_images = []
         for cam_name in self.camera_names:
-            all_cam_images.append(image_dict[cam_name])
+            if cam_name == 'image':
+                all_cam_images.append(image_dict[cam_name].squeeze(0))
+            else:
+                all_cam_images.append(image_dict[cam_name])
         all_cam_images = np.stack(all_cam_images, axis=0)
 
         # construct observations
@@ -100,6 +107,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
         image_data = image_data / 255.0
         action_data = (action_data - self.norm_stats["action_mean"]) / self.norm_stats["action_std"]
         qpos_data = (qpos_data - self.norm_stats["qpos_mean"]) / self.norm_stats["qpos_std"]
+
 
         return image_data, qpos_data, action_data, is_pad
 
@@ -120,7 +128,7 @@ def get_norm_stats(dataset_dir, num_episodes):
         with h5py.File(dataset_path, 'r') as root:
             base_path = f'data/demo_0'
 
-            qpos = root[f'{base_path}/observations/qpos'][()]
+            qpos = root[f'{base_path}/observations/joint_pos'][()]
             action = root[f'{base_path}/action'][()]
             # print(f"Episode {episode_idx} action length: {len(action)}")
 

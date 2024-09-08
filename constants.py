@@ -1,8 +1,35 @@
 import pathlib
-
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    'rgb_liver_needle_lift': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/2024-09-05-Isaac-Lift-Needle-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+    },
+    'rgb_liver_needle_handover': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+    },
+    'rgb_peg_transfer': {
+        'dataset_dir': '/ACT_Training/peg_transfer/2024-09-06-Isaac-Transfer-Block-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+    },
+    'rgb_suture_pad': {
+        'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+    },
     'needle_handover': {
         'dataset_dir': '/data',
         'num_episodes': 50,

@@ -26,25 +26,26 @@ from grokfast import gradfilter_ma, gradfilter_ema
 import IPython
 e = IPython.embed
 
-def main(json_config):
-    wandb_id = f"new_cam-50-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
-    wandb.init(project="ACT-Handover", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
+def main(task, json_config):
+    import datetime
+    from constants import SIM_TASK_CONFIGS
+
+    # Get current date in format YYYY-MM-DD-HH-MM
+    date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+
+    wandb_id = f"{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
-    task_config = {
-        'dataset_dir': '/data',
-        'num_episodes': 50,
-        'episode_len': 469,
-        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
-    }
+    task_config = SIM_TASK_CONFIGS[task]
+
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/vr_act_needle_handover_weights/{wandb_id}"
-    # checkpoint_dir = "./tmppp"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights/{wandb_id}"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
         'num_queries': json_config.chunk_size,  # You might want to make this configurable
-        'chunk_size': json_config.chunk_size,       
+        'chunk_size': json_config.chunk_size,
         'kl_weight': json_config.kl_weight,  # You might want to make this configurable
         'hidden_dim': 512,  # You might want to make this configurable
         "batch_size": json_config.batch_size,
@@ -61,8 +62,8 @@ def main(json_config):
         "eval": False,
         "ckpt_dir": checkpoint_dir,
         "onscreen_render": False,
-        "task_name": "needle_handover",
-        "temporal_agg": True
+        "task_name": task,
+        "temporal_agg": True,
     }
 
     # command line parameters
@@ -90,8 +91,6 @@ def main(json_config):
 
     # fixed parameters
     state_dim = 4 # x_pos, y_pos, z_pos, x_rot, y_rot, z_rot, gripper_bool
-    lr_backbone = 1e-5
-    backbone = 'resnet18'
     if policy_class == 'ACT':
         enc_layers = 4
         dec_layers = 7
@@ -101,15 +100,16 @@ def main(json_config):
                         'kl_weight': args['kl_weight'],
                         'hidden_dim': args['hidden_dim'],
                         'dim_feedforward': args['dim_feedforward'],
-                        'lr_backbone': lr_backbone,
-                        'backbone': backbone,
+                        'lr_backbone': args['lr_backbone'],
+                        'backbone': args['backbone'],
                         'enc_layers': enc_layers,
                         'dec_layers': dec_layers,
                         'nheads': nheads,
                         'camera_names': camera_names,
+                        'dual_arm': task_config.get('dual_arm', False),
                         }
     elif policy_class == 'CNNMLP':
-        policy_config = {'lr': args['lr'], 'lr_backbone': lr_backbone, 'backbone' : backbone, 'num_queries': 1,
+        policy_config = {'lr': args['lr'], 'lr_backbone': args['lr_backbone'], 'backbone' : args['backbone'], 'num_queries': 1,
                         'camera_names': camera_names,}
     else:
         raise NotImplementedError
@@ -131,7 +131,8 @@ def main(json_config):
     }
 
 
-    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val)
+    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, 
+                                                           batch_size_train, batch_size_val)
 
     # save dataset stats
     if not os.path.isdir(ckpt_dir):
@@ -148,9 +149,9 @@ def main(json_config):
 
     set_seed(seed)
 
-    policy = make_policy(policy_class, policy_config)
+    policy = ACTPolicy(policy_config)
     policy.cuda()
-    optimizer = make_optimizer(policy_class, policy)
+    optimizer = policy.configure_optimizers()
 
     # Training loop evals
     start_epoch = 0
@@ -234,7 +235,7 @@ def main(json_config):
         if epoch % 250 == 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
-        if epoch % 250 == 0:
+        if epoch % 500 == 0 and epoch > 2000:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
@@ -343,11 +344,12 @@ def find_latest_checkpoint(ckpt_dir, seed):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run main function with JSON config")
-    parser.add_argument('config_file', type=str, help='Path to JSON config file')
+    parser.add_argument('--config_file', type=str, help='Path to JSON config file')
+    parser.add_argument('--task', type=str, help='task config to use', required=True)
     args = parser.parse_args()
 
     with open(args.config_file, 'r') as f:
         config_dict = json.load(f)
     
     config = SimpleNamespace(**config_dict)
-    main(config)
+    main(args.task, config)
