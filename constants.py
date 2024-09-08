@@ -1,8 +1,43 @@
 import pathlib
-
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    '100_suture_pad': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0/d3_100_09-06+08-28-clean.zarr',
+        'num_episodes': 101,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': True,
+        'backbone': 'pointnet'
+    },
+    '100_peg_transfer': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Transfer-Block-PSM-IK-Rel-v0/d3_100-episodes-09-06+08-24-cleaned.zarr',
+        'num_episodes': 104,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    'pc_needle_handover_plain': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Dual-PSM-IK-Rel-v0/d3_2024-08-24-cleaned.zarr',
+        'num_episodes': 51,
+        'episode_len': 400,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': True,
+        'backbone': 'pointnet'
+    },
+    'pc_suture_pad_v2': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0/d3_2024-09-06-cleaned.zarr',
+        'num_episodes': 52,
+        'episode_len': 529,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': True,
+        'backbone': 'pointnet'
+    },
     'pc_transfer_block': {
         'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Transfer-Block-PSM-IK-Rel-v0/d3_2024-09-06-cleaned.zarr',
         'num_episodes': 52,
@@ -22,7 +57,7 @@ SIM_TASK_CONFIGS = {
         'backbone': 'pointnet'
     },
     'pc_needle_handover_back_muscle': {
-        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0/d3_2024-09-05_cleaned-even.zarr',
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0/d3_2024-09-05_cleaned.zarr',
         'num_episodes': 52,
         'episode_len': 262,
         'camera_names': ['image'],
