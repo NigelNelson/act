@@ -7,7 +7,7 @@ SIM_TASK_CONFIGS = {
         'num_episodes': 52,
         'episode_len': 600,
         'dual_arm': False,
-        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+        'camera_names': ['image', 'wrist_image']
     },
     'rgb_liver_needle_handover': {
         'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
@@ -21,7 +21,7 @@ SIM_TASK_CONFIGS = {
         'num_episodes': 52,
         'episode_len': 600,
         'dual_arm': False,
-        'camera_names': ['image', 'wrist_image_right', 'wrist_image_left']
+        'camera_names': ['image', 'wrist_image']
     },
     'rgb_suture_pad': {
         'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
