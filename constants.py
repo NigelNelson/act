@@ -2,6 +2,51 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    '50_pc_peg_transfer': {
+        'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/50-50.zarr',
+        'num_episodes': 50,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '40_pc_peg_transfer': {
+        'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/40-50.zarr',
+        'num_episodes': 40,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '30_pc_peg_transfer': {
+        'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/30-50.zarr',
+        'num_episodes': 30,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '20_pc_peg_transfer': {
+        'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/20-50.zarr',
+        'num_episodes': 20,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '10_pc_peg_transfer': {
+        'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/10-50.zarr',
+        'num_episodes': 10,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
     '100_suture_pad': {
         'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0/d3_100_09-06+08-28-clean.zarr',
         'num_episodes': 101,
