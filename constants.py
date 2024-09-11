@@ -38,7 +38,7 @@ SIM_TASK_CONFIGS = {
         'dual_arm': False,
         'backbone': 'pointnet'
     },
-    '20_pc_suture_pad: {
+    '20_pc_suture_pad': {
         'dataset_dir': '/ACT_Training/suture_pad/splits/2024-09-05-splits/2024-09-0-splits/-20-50.zarr',
         'num_episodes': 20,
         'episode_len': 500,
@@ -128,7 +128,7 @@ SIM_TASK_CONFIGS = {
         'dual_arm': False,
         'backbone': 'pointnet'
     },
-    '20_pc_liver_needle_lift: {
+    '20_pc_liver_needle_lift': {
         'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/-20-50.zarr',
         'num_episodes': 20,
         'episode_len': 500,
