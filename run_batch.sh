@@ -7,11 +7,13 @@ export TRANSFORMERS_CACHE=/lustre/fsw/portfolios/healthcareeng/users/nigeln/hf_h
 #   CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py "configs/config_${i}.json" &
 #   CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py "configs/config_grok_${i}.json" &
 # done
-CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py --config_file configs/config_3.json --task 10_pc_peg_transfer &
-CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py --config_file configs/config_3.json --task 20_pc_peg_transfer &
-CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py --config_file configs/config_3.json --task 30_pc_peg_transfer &
-CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py --config_file configs/config_3.json --task 40_pc_peg_transfer &
-CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py --config_file configs/config_3.json --task 50_pc_peg_transfer &
+# Peg transfer
+CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task 10_pc_peg_transfer &
+CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task 20_pc_peg_transfer &
+CUDA_VISIBLE_DEVICES=1 python batch_imitate_episodes.py --config_file configs/config_3.json --task 30_pc_peg_transfer &
+CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task 40_pc_peg_transfer &
+CUDA_VISIBLE_DEVICES=1 python batch_imitate_episodes.py --config_file configs/config_3.json --task 50_pc_peg_transfer &
+# Suture pad
 # Wait for all background processes to complete
 wait
 

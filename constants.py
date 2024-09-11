@@ -2,6 +2,15 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    '53_pc_tissue_lift': {
+        'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Lift-Tissue-PSM-IK-Rel-v0/d3_2024-09-10.zarr',
+        'num_episodes': 53,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
     '50_pc_peg_transfer': {
         'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/50-50.zarr',
         'num_episodes': 50,
