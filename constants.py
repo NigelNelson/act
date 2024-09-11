@@ -17,7 +17,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '40_pc_suture_pad': {
@@ -26,7 +26,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '30_pc_suture_pad': {
@@ -35,7 +35,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '20_pc_suture_pad': {
@@ -44,7 +44,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '10_pc_suture_pad': {
@@ -53,7 +53,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '50_pc_liver_needle_handover': {
@@ -62,7 +62,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '40_pc_liver_needle_handover': {
@@ -71,7 +71,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '30_pc_liver_needle_handover': {
@@ -80,7 +80,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '20_pc_liver_needle_handover': {
@@ -89,7 +89,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '10_pc_liver_needle_handover': {
@@ -98,7 +98,7 @@ SIM_TASK_CONFIGS = {
         'episode_len': 500,
         'camera_names': ['image'],
         'use_pointcloud': True,
-        'dual_arm': False,
+        'dual_arm': True,
         'backbone': 'pointnet'
     },
     '50_pc_liver_needle_lift': {
