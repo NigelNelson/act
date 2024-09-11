@@ -11,6 +11,141 @@ SIM_TASK_CONFIGS = {
         'dual_arm': False,
         'backbone': 'pointnet'
     },
+    '50_pc_suture_pad': {
+        'dataset_dir': '/ACT_Training/suture_pad/splits/2024-09-05-splits/2024-09-0-splits/-50-50.zarr',
+        'num_episodes': 50,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '40_pc_suture_pad': {
+        'dataset_dir': '/ACT_Training/suture_pad/splits/2024-09-05-splits/2024-09-0-splits/-40-50.zarr',
+        'num_episodes': 40,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '30_pc_suture_pad': {
+        'dataset_dir': '/ACT_Training/suture_pad/splits/2024-09-05-splits/2024-09-0-splits/-30-50.zarr',
+        'num_episodes': 30,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '20_pc_suture_pad: {
+        'dataset_dir': '/ACT_Training/suture_pad/splits/2024-09-05-splits/2024-09-0-splits/-20-50.zarr',
+        'num_episodes': 20,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '10_pc_suture_pad': {
+        'dataset_dir': '/ACT_Training/suture_pad/splits/2024-09-05-splits/2024-09-0-splits/-10-50.zarr',
+        'num_episodes': 10,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '50_pc_liver_needle_handover': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/splits/2024-09-05-splits/split-up-50-50.zarr',
+        'num_episodes': 50,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '40_pc_liver_needle_handover': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/splits/2024-09-05-splits/split-up-40-50.zarr',
+        'num_episodes': 40,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '30_pc_liver_needle_handover': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/splits/2024-09-05-splits/split-up-30-50.zarr',
+        'num_episodes': 30,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '20_pc_liver_needle_handover': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/splits/2024-09-05-splits/split-up-20-50.zarr',
+        'num_episodes': 20,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '10_pc_liver_needle_handover': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/splits/2024-09-05-splits/split-up-10-50.zarr',
+        'num_episodes': 10,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '50_pc_liver_needle_lift': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/-50-50.zarr',
+        'num_episodes': 50,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '40_pc_liver_needle_lift': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/40-50.zarr',
+        'num_episodes': 40,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '30_pc_liver_needle_lift': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/-30-50.zarr',
+        'num_episodes': 30,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '20_pc_liver_needle_lift: {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/-20-50.zarr',
+        'num_episodes': 20,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '10_pc_liver_needle_lift': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/-10-50.zarr',
+        'num_episodes': 10,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
     '50_pc_peg_transfer': {
         'dataset_dir': '/ACT_Training/peg_transfer/splits/2024-09-06-splits/50-50.zarr',
         'num_episodes': 50,
