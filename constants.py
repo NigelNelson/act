@@ -111,7 +111,7 @@ SIM_TASK_CONFIGS = {
         'backbone': 'pointnet'
     },
     '40_pc_liver_needle_lift': {
-        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/40-50.zarr',
+        'dataset_dir': '/ACT_Training/liver_needle_lift/splits/2024-09-05-splits/-40-50.zarr',
         'num_episodes': 40,
         'episode_len': 500,
         'camera_names': ['image'],
