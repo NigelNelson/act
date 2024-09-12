@@ -12,7 +12,7 @@ CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/co
 CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_tissue_lift_20 &
 CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_tissue_lift_30 &
 CUDA_VISIBLE_DEVICES=1 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_tissue_lift_40 &
-# CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_tissue_lift_50 &
+CUDA_VISIBLE_DEVICES=2 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_tissue_lift_50 &
 
 CUDA_VISIBLE_DEVICES=1 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_liver_needle_lift_10 &
 CUDA_VISIBLE_DEVICES=1 python batch_imitate_episodes.py --config_file configs/config_3.json --task rgb_liver_needle_lift_20 &

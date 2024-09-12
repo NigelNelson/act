@@ -38,7 +38,7 @@ SIM_TASK_CONFIGS = {
         'dataset_dir': '/lustre/fs11/portfolios/healthcareeng/projects/healthcareeng_holoscan/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
         'num_episodes': 52,
         'episode_len': 600,
-        'total_episodes': 50,
+        'total_episodes': 52,
         'dual_arm': False,
         'camera_names': ['image']
     },
