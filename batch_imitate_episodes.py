@@ -33,7 +33,7 @@ def main(task, json_config):
     # Get current date in format YYYY-MM-DD-HH-MM
     date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-    wandb_id = f"single-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"single-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_data"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -41,7 +41,7 @@ def main(task, json_config):
 
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights-data-efficiency/{wandb_id}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights-data-efficiency_1/{wandb_id}"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
         'num_queries': json_config.chunk_size,  # You might want to make this configurable
