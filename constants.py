@@ -3,7 +3,7 @@ import pathlib
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
     'rgb_tissue_lift_10': {
-        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
         'episode_len': 600,
         'total_episodes': 10,
@@ -11,7 +11,7 @@ SIM_TASK_CONFIGS = {
         'camera_names': ['image']
     },
     'rgb_tissue_lift_20': {
-        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
         'episode_len': 600,
         'total_episodes': 20,
@@ -19,7 +19,7 @@ SIM_TASK_CONFIGS = {
         'camera_names': ['image']
     },
     'rgb_tissue_lift_30': {
-        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
         'episode_len': 600,
         'total_episodes': 30,
@@ -27,7 +27,7 @@ SIM_TASK_CONFIGS = {
         'camera_names': ['image']
     },
     'rgb_tissue_lift_40': {
-        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
         'episode_len': 600,
         'total_episodes': 40,
@@ -35,7 +35,7 @@ SIM_TASK_CONFIGS = {
         'camera_names': ['image']
     },
     'rgb_tissue_lift_50': {
-        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
         'episode_len': 600,
         'total_episodes': 52,
