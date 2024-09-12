@@ -2,30 +2,202 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
-    'rgb_liver_needle_lift': {
+    'rgb_tissue_lift_10': {
+        'dataset_dir': '/lustre/fs11/portfolios/healthcareeng/projects/healthcareeng_holoscan/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'total_episodes': 10,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_tissue_lift_20': {
+        'dataset_dir': '/lustre/fs11/portfolios/healthcareeng/projects/healthcareeng_holoscan/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'total_episodes': 20,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_tissue_lift_30': {
+        'dataset_dir': '/lustre/fs11/portfolios/healthcareeng/projects/healthcareeng_holoscan/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'total_episodes': 30,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_tissue_lift_40': {
+        'dataset_dir': '/lustre/fs11/portfolios/healthcareeng/projects/healthcareeng_holoscan/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'total_episodes': 40,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_tissue_lift_50': {
+        'dataset_dir': '/lustre/fs11/portfolios/healthcareeng/projects/healthcareeng_holoscan/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0',
+        'num_episodes': 52,
+        'episode_len': 600,
+        'total_episodes': 50,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_lift_10': {
         'dataset_dir': '/ACT_Training/liver_needle_lift/2024-09-05-Isaac-Lift-Needle-PSM-Back-Muscle-IK-Rel-v0-cleaned',
         'num_episodes': 52,
+        'total_episodes': 10,
         'episode_len': 600,
         'dual_arm': False,
         'camera_names': ['image']
     },
-    'rgb_liver_needle_handover': {
+    'rgb_liver_needle_lift_20': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/2024-09-05-Isaac-Lift-Needle-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 20,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_lift_30': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/2024-09-05-Isaac-Lift-Needle-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 30,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_lift_40': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/2024-09-05-Isaac-Lift-Needle-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 40,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_lift_50': {
+        'dataset_dir': '/ACT_Training/liver_needle_lift/2024-09-05-Isaac-Lift-Needle-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 50,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_handover_10': {
         'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
         'num_episodes': 52,
+        'total_episodes': 10,
         'episode_len': 600,
         'dual_arm': True,
         'camera_names': ['image']
     },
-    'rgb_peg_transfer': {
+    'rgb_liver_needle_handover_20': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 20,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_handover_30': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 30,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_handover_40': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 40,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_liver_needle_handover_50': {
+        'dataset_dir': '/ACT_Training/liver_needle_handover/2024-09-05-Isaac-Handover-Needle-Dual-PSM-Back-Muscle-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 50,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_peg_transfer_10': {
         'dataset_dir': '/ACT_Training/peg_transfer/2024-09-06-Isaac-Transfer-Block-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
+        'total_episodes': 10,
         'episode_len': 600,
         'dual_arm': False,
         'camera_names': ['image']
     },
-    'rgb_suture_pad': {
+    'rgb_peg_transfer_20': {
+        'dataset_dir': '/ACT_Training/peg_transfer/2024-09-06-Isaac-Transfer-Block-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 20,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_peg_transfer_30': {
+        'dataset_dir': '/ACT_Training/peg_transfer/2024-09-06-Isaac-Transfer-Block-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 30,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_peg_transfer_40': {
+        'dataset_dir': '/ACT_Training/peg_transfer/2024-09-06-Isaac-Transfer-Block-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 40,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_peg_transfer_50': {
+        'dataset_dir': '/ACT_Training/peg_transfer/2024-09-06-Isaac-Transfer-Block-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 50,
+        'episode_len': 600,
+        'dual_arm': False,
+        'camera_names': ['image']
+    },
+    'rgb_suture_pad_10': {
         'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,
+        'total_episodes': 10,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_suture_pad_20': {
+        'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 20,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_suture_pad_30': {
+        'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 30,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_suture_pad_40': {
+        'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 40,
+        'episode_len': 600,
+        'dual_arm': True,
+        'camera_names': ['image']
+    },
+    'rgb_suture_pad_50': {
+        'dataset_dir': '/ACT_Training/suture_pad/2024-09-06-Isaac-Handover-Needle-Suture_Pad-Dual-PSM-IK-Rel-v0-cleaned',
+        'num_episodes': 52,
+        'total_episodes': 50,
         'episode_len': 600,
         'dual_arm': True,
         'camera_names': ['image']

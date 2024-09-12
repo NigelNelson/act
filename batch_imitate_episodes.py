@@ -41,7 +41,7 @@ def main(task, json_config):
 
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights/{wandb_id}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights-data-efficiency/{wandb_id}"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
         'num_queries': json_config.chunk_size,  # You might want to make this configurable
@@ -130,8 +130,8 @@ def main(task, json_config):
         'real_robot': not is_sim
     }
 
-
-    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, 
+    total_episodes = task_config['total_episodes']
+    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, total_episodes, camera_names, 
                                                            batch_size_train, batch_size_val)
 
     # save dataset stats
@@ -232,7 +232,7 @@ def main(task, json_config):
         wandb.log(wandb_summary)
 
         # Save checkpoint every 250 steps
-        if epoch % 250 == 0:
+        if epoch % 1000 == 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
         if epoch % 500 == 0 and epoch > 2000:
