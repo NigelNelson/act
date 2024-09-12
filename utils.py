@@ -87,7 +87,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
         # new axis for different cameras
         all_cam_images = []
         for cam_name in self.camera_names:
-            if cam_name == 'image' and 'rgb_tissue_lift' not in self.dataset_dir:
+            if cam_name == 'image' and 'lift_tissue' not in self.dataset_dir:
                 all_cam_images.append(image_dict[cam_name].squeeze(0))
             else:
                 all_cam_images.append(image_dict[cam_name])
