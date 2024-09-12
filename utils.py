@@ -17,7 +17,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
         self.camera_names = camera_names
         self.norm_stats = norm_stats
         self.is_sim = None
-        self.__getitem__(episode_ids[0]) # initialize self.is_sim
+        self.__getitem__(0) # initialize self.is_sim
 
     def __len__(self):
         return len(self.episode_ids)
@@ -179,10 +179,10 @@ def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_siz
     # print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.88
-    shuffled_indices = np.random.permutation(total_episodes)
-    shuffled_indices = shuffled_indices[:num_episodes]
-    train_indices = shuffled_indices[:int(train_ratio * num_episodes)]
-    val_indices = shuffled_indices[int(train_ratio * num_episodes):]
+    shuffled_indices = np.random.permutation(num_episodes)
+    shuffled_indices = shuffled_indices[:total_episodes]
+    train_indices = shuffled_indices[:int(train_ratio * total_episodes)]
+    val_indices = shuffled_indices[int(train_ratio * total_episodes):]
 
     # obtain normalization stats for qpos and action
     norm_stats = get_norm_stats(dataset_dir, num_episodes)
