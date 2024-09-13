@@ -49,7 +49,7 @@ def main(task, json_config):
         'kl_weight': json_config.kl_weight,  # You might want to make this configurable
         'hidden_dim': 512,  # You might want to make this configurable
         "batch_size": json_config.batch_size,
-        "num_epochs": 8000,
+        "num_epochs": 16000,
         'dim_feedforward': 3200,  # You might want to make this configurable
         'lr_backbone': 1e-5,
         'backbone': 'resnet18',
@@ -240,7 +240,7 @@ def main(task, json_config):
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
 
-    ckpt_path = os.path.join(ckpt_dir, f'policy_last.ckpt')
+    ckpt_path = os.path.join(ckpt_dir, f'policy_last_16000.ckpt')
     torch.save(policy.state_dict(), ckpt_path)
 
     best_epoch, min_val_loss, best_state_dict = best_ckpt_info
@@ -255,7 +255,7 @@ def main(task, json_config):
     best_epoch, min_val_loss, best_state_dict = best_ckpt_info
 
     # save best checkpoint
-    ckpt_path = os.path.join(ckpt_dir, f'policy_best.ckpt')
+    ckpt_path = os.path.join(ckpt_dir, f'policy_best_16000.ckpt')
     torch.save(best_state_dict, ckpt_path)
     print(f'Best ckpt, val loss {min_val_loss:.6f} @ epoch{best_epoch}')
 
