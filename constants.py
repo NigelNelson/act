@@ -2,6 +2,56 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    '10_tissue_lift': {
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'num_episodes': 52,
+        'total_episodes': 10,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '20_tissue_lift': {
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'num_episodes': 52,
+        'total_episodes': 20,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '30_tissue_lift': {
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'num_episodes': 52,
+        'total_episodes': 30,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '40_tissue_lift': {
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'num_episodes': 52,
+        'total_episodes': 40,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
+    '50_tissue_lift': {
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'num_episodes': 52,
+        'total_episodes': 50,
+        'episode_len': 500,
+        'camera_names': ['image'],
+        'use_pointcloud': True,
+        'dual_arm': False,
+        'backbone': 'pointnet'
+    },
     '53_pc_tissue_lift': {
         'dataset_dir': '/media/m2/holoscan-dev/holoscan-ml/robots/orbit-surgical-nv/logs/dp3/Isaac-Lift-Tissue-PSM-IK-Rel-v0/d3_2024-09-10.zarr',
         'num_episodes': 53,

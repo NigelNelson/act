@@ -33,7 +33,7 @@ def main(task, json_config):
     # Get current date in format YYYY-MM-DD-HH-MM
     date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-    wandb_id = f"{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"{task}-act-pcm-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -41,7 +41,7 @@ def main(task, json_config):
 
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/act-pcm/split_weights/{date}-{wandb_id}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/act-pcm/split_weights_tissue_lift/{wandb_id}"
     # checkpoint_dir = "./tmppp"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
@@ -133,11 +133,12 @@ def main(task, json_config):
         'real_robot': not is_sim
     }
 
-
+    total_episodes = task_config['total_episodes']
     train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, 
                                                            batch_size_train, batch_size_val, 
                                                            use_pointcloud=args['use_pointcloud'],
-                                                           episode_len=episode_len)
+                                                           episode_len=episode_len,
+                                                           total_episodes=total_episodes)
 
     # save dataset stats
     if not os.path.isdir(ckpt_dir):
