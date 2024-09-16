@@ -12,7 +12,7 @@ CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/co
 CUDA_VISIBLE_DEVICES=1 python batch_imitate_episodes.py --config_file configs/config_3.json --task 40_tissue_lift &
 CUDA_VISIBLE_DEVICES=2 python batch_imitate_episodes.py --config_file configs/config_3.json --task 30_tissue_lift &
 CUDA_VISIBLE_DEVICES=3 python batch_imitate_episodes.py --config_file configs/config_3.json --task 20_tissue_lift &
-CUDA_VISIBLE_DEVICES=4 python batch_imitate_episodes.py --config_file configs/config_3.json --task 10_tissue_lift &
+CUDA_VISIBLE_DEVICES=3 python batch_imitate_episodes.py --config_file configs/config_3.json --task 10_tissue_lift &
 
 # Suture pad
 # Wait for all background processes to complete
