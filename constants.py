@@ -3,7 +3,7 @@ import pathlib
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
     '10_tissue_lift': {
-        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10-cleaned.zarr',
         'num_episodes': 52,
         'total_episodes': 10,
         'episode_len': 500,
@@ -13,7 +13,7 @@ SIM_TASK_CONFIGS = {
         'backbone': 'pointnet'
     },
     '20_tissue_lift': {
-        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10-cleaned.zarr',
         'num_episodes': 52,
         'total_episodes': 20,
         'episode_len': 500,
@@ -23,7 +23,7 @@ SIM_TASK_CONFIGS = {
         'backbone': 'pointnet'
     },
     '30_tissue_lift': {
-        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10-cleaned.zarr',
         'num_episodes': 52,
         'total_episodes': 30,
         'episode_len': 500,
@@ -33,7 +33,7 @@ SIM_TASK_CONFIGS = {
         'backbone': 'pointnet'
     },
     '40_tissue_lift': {
-        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10-cleaned.zarr',
         'num_episodes': 52,
         'total_episodes': 40,
         'episode_len': 500,
@@ -43,7 +43,7 @@ SIM_TASK_CONFIGS = {
         'backbone': 'pointnet'
     },
     '50_tissue_lift': {
-        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10.zarr',
+        'dataset_dir': '/ACT_Training/lift_tissue/d3_2024-09-10-cleaned.zarr',
         'num_episodes': 52,
         'total_episodes': 50,
         'episode_len': 500,
