@@ -1,4 +1,7 @@
 import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
+from torch.nn.parallel import DistributedDataParallel as DDP
 import numpy as np
 import os
 import pickle
@@ -26,14 +29,24 @@ from grokfast import gradfilter_ma, gradfilter_ema
 import IPython
 e = IPython.embed
 
-def main(task, json_config):
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+
+def cleanup():
+    dist.destroy_process_group()
+
+def main(rank, world_size, task, json_config):
+    setup(rank, world_size)
+    
     import datetime
     from constants import SIM_TASK_CONFIGS
 
     # Get current date in format YYYY-MM-DD-HH-MM
     date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_new"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -131,8 +144,8 @@ def main(task, json_config):
     }
 
     total_episodes = task_config['total_episodes']
-    train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, total_episodes, camera_names, 
-                                                           batch_size_train, batch_size_val)
+    train_dataloader, train_sampler, val_dataloader, val_sampler, stats, _ = load_data(dataset_dir, num_episodes, total_episodes, camera_names, 
+                                                           batch_size_train, batch_size_val, world_size, rank)
 
     # save dataset stats
     if not os.path.isdir(ckpt_dir):
@@ -150,8 +163,9 @@ def main(task, json_config):
     set_seed(seed)
 
     policy = ACTPolicy(policy_config)
-    policy.cuda()
-    optimizer = policy.configure_optimizers()
+    policy.cuda(rank)
+    policy = DDP(policy, device_ids=[rank])
+    optimizer = policy.module.configure_optimizers()
 
     # Training loop evals
     start_epoch = 0
@@ -168,16 +182,19 @@ def main(task, json_config):
     if latest_ckpt:
         start_epoch, train_history, validation_history, best_ckpt_info, grads = load_checkpoint(latest_ckpt, policy, optimizer)
         best_epoch, min_val_loss, best_state_dict = best_ckpt_info
-        print(f'Resuming from epoch {start_epoch}')
+        if rank == 0:
+            print(f'Resuming from epoch {start_epoch}')
     else:
-        print('Starting from scratch..\n\n')
+        if rank == 0:
+            print('Starting from scratch..\n\n')
 
     # GrokFast
     alpha = json_config.alpha
     lamb = json_config.lamb
 
     for epoch in tqdm(range(start_epoch, num_epochs)):
-        print(f'\nEpoch {epoch}')
+        if rank == 0:
+            print(f'\nEpoch {epoch}')
         wandb_summary = {}
         is_best_val = False
         # validation
@@ -194,8 +211,9 @@ def main(task, json_config):
             if epoch_val_loss < min_val_loss:
                 is_best_val = True
                 min_val_loss = epoch_val_loss
-                best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.state_dict()))
-        print(f'Val loss:   {epoch_val_loss:.5f}')
+                best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.module.state_dict()))
+        if rank == 0:
+            print(f'Val loss:   {epoch_val_loss:.5f}')
         summary_string = ''
         wandb_summary = {}
         for k, v in epoch_summary.items():
@@ -206,13 +224,18 @@ def main(task, json_config):
         # training
         policy.train()
         optimizer.zero_grad()
+
+        # set samplers to epoch
+        train_sampler.set_epoch(epoch)
+        val_sampler.set_epoch(epoch)
+
         for batch_idx, data in enumerate(train_dataloader):
             forward_dict = forward_pass(data, policy)
             # backward
             loss = forward_dict['loss']
             loss.backward()
             if json_config.alpha > 0:
-                grads = gradfilter_ema(policy, grads=grads, alpha=alpha, lamb=lamb)
+                grads = gradfilter_ema(policy.module, grads=grads, alpha=alpha, lamb=lamb)
             optimizer.step()
             optimizer.zero_grad()
             train_history.append(detach_dict(forward_dict))
@@ -220,7 +243,8 @@ def main(task, json_config):
 
         epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
         epoch_train_loss = epoch_summary['loss']
-        print(f'Train loss: {epoch_train_loss:.5f}')
+        if rank == 0:
+            print(f'Train loss: {epoch_train_loss:.5f}')
         summary_string = ''
         for k, v in epoch_summary.items():
             summary_string += f'{k}: {v.item():.3f} '
@@ -229,35 +253,37 @@ def main(task, json_config):
         wandb_summary['epoch'] = epoch
         wandb_summary['val_loss'] = epoch_val_loss
         wandb_summary['best_val_loss'] = min_val_loss
-        wandb.log(wandb_summary)
+        if rank == 0:
+            wandb.log(wandb_summary)
 
         # Save checkpoint every 250 steps
-        if epoch % 1000 == 0:
+        if epoch % 250 == 0 and rank == 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
-        if epoch % 500 == 0 and epoch > 2000:
+        if epoch % 250 == 0 and rank == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
-            torch.save(policy.state_dict(), ckpt_path)
+            torch.save(policy.module.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
 
-    ckpt_path = os.path.join(ckpt_dir, f'policy_last.ckpt')
-    torch.save(policy.state_dict(), ckpt_path)
+    if rank == 0:
+        ckpt_path = os.path.join(ckpt_dir, f'policy_last.ckpt')
+        torch.save(policy.module.state_dict(), ckpt_path)
 
-    best_epoch, min_val_loss, best_state_dict = best_ckpt_info
-    ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{best_epoch}_seed_{seed}.ckpt')
-    torch.save(best_state_dict, ckpt_path)
-    print(f'Training finished:\nSeed {seed}, val loss {min_val_loss:.6f} at epoch {best_epoch}')
+        best_epoch, min_val_loss, best_state_dict = best_ckpt_info
+        ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{best_epoch}_seed_{seed}.ckpt')
+        torch.save(best_state_dict, ckpt_path)
+        print(f'Training finished:\nSeed {seed}, val loss {min_val_loss:.6f} at epoch {best_epoch}')
 
-    # save training curves
-    plot_history(train_history, validation_history, num_epochs, ckpt_dir, seed)
+        # save training curves
+        plot_history(train_history, validation_history, num_epochs, ckpt_dir, seed)
 
 
-    best_epoch, min_val_loss, best_state_dict = best_ckpt_info
+        best_epoch, min_val_loss, best_state_dict = best_ckpt_info
 
-    # save best checkpoint
-    ckpt_path = os.path.join(ckpt_dir, f'policy_best.ckpt')
-    torch.save(best_state_dict, ckpt_path)
-    print(f'Best ckpt, val loss {min_val_loss:.6f} @ epoch{best_epoch}')
+        # save best checkpoint
+        ckpt_path = os.path.join(ckpt_dir, f'policy_best.ckpt')
+        torch.save(best_state_dict, ckpt_path)
+        print(f'Best ckpt, val loss {min_val_loss:.6f} @ epoch{best_epoch}')
 
 
 def make_policy(policy_class, policy_config):
@@ -315,7 +341,7 @@ def plot_history(train_history, validation_history, num_epochs, ckpt_dir, seed):
 def save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads):
     checkpoint = {
         'epoch': epoch,
-        'policy_state_dict': policy.state_dict(),
+        'policy_state_dict': policy.module.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'train_history': train_history,
         'validation_history': validation_history,
@@ -329,7 +355,7 @@ def save_checkpoint(epoch, policy, optimizer, train_history, validation_history,
 
 def load_checkpoint(ckpt_path, policy, optimizer):
     checkpoint = torch.load(ckpt_path)
-    policy.load_state_dict(checkpoint['policy_state_dict'])
+    policy.module.load_state_dict(checkpoint['policy_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     return (checkpoint['epoch'], checkpoint['train_history'], 
             checkpoint['validation_history'], checkpoint['best_ckpt_info'], checkpoint['grads'])
@@ -352,4 +378,6 @@ if __name__ == "__main__":
         config_dict = json.load(f)
     
     config = SimpleNamespace(**config_dict)
-    main(args.task, config)
+    
+    world_size = torch.cuda.device_count()
+    mp.spawn(main, args=(world_size, args.task, config), nprocs=world_size, join=True)

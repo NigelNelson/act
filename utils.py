@@ -7,6 +7,8 @@ import pickle
 import random
 import zarr
 from skimage import exposure
+from torch.utils.data.distributed import DistributedSampler
+
 
 import IPython
 e = IPython.embed
@@ -201,7 +203,7 @@ def get_norm_stats(dataset_dir, num_episodes):
     return stats
 
 
-def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_size_train, batch_size_val):
+def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_size_train, batch_size_val, world_size, rank):
     # print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.92
@@ -223,10 +225,12 @@ def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_siz
     # construct dataset and dataloader
     train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats)
     val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats)
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
+    train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank)
+    val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, sampler=train_sampler, pin_memory=True, num_workers=1, prefetch_factor=1)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, sampler=val_sampler, pin_memory=True, num_workers=1, prefetch_factor=1)
 
-    return train_dataloader, val_dataloader, norm_stats, train_dataset.is_sim
+    return train_dataloader, train_sampler, val_dataloader, val_sampler, norm_stats, train_dataset.is_sim
 
 
 ### env utils
