@@ -2,6 +2,14 @@ import pathlib
 ### Task parameters
 DATA_DIR = '<put your data dir here>'
 SIM_TASK_CONFIGS = {
+    'real_lift': {
+        'dataset_dir':  '/ACT_Training/real_data/real_lift_needle_d3_100_rel-cleaned.zarr',
+        'num_episodes': 100,
+        'episode_len': 600,
+        'total_episodes': 100,
+        'dual_arm': False,
+        'camera_names': ['rgb']
+    },
     'rgb_tissue_lift_10': {
         'dataset_dir': '/ACT_Training/lift_tissue/rgb/2024-09-10-Isaac-Lift-Tissue-PSM-IK-Rel-v0-cleaned',
         'num_episodes': 52,

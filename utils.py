@@ -5,36 +5,59 @@ import h5py
 from torch.utils.data import TensorDataset, DataLoader
 import pickle
 import random
+import zarr
+from skimage import exposure
 
 import IPython
 e = IPython.embed
 
 class EpisodicDataset(torch.utils.data.Dataset):
-    def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats):
+    def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats, noise_std=0.1):
         super(EpisodicDataset).__init__()
         self.episode_ids = episode_ids
         self.dataset_dir = dataset_dir
         self.camera_names = camera_names
         self.norm_stats = norm_stats
         self.is_sim = None
-        self.__getitem__(0) # initialize self.is_sim
+        self.__getitem__(0)  # initialize self.is_sim
 
     def __len__(self):
         return len(self.episode_ids)
+
+    def add_adaptive_noise(self, image, noise_level=0.05):
+        # Perform histogram equalization
+        img_eq = exposure.equalize_hist(image)
+        
+        # Generate noise
+        noise = np.random.normal(0, noise_level, image.shape)
+        
+        # Scale noise based on local image intensity
+        scaled_noise = noise * img_eq
+        
+        # Add scaled noise to the original image
+        noisy_img = image + scaled_noise
+        
+        # Rescale the image to [0, 1] range
+        noisy_img = exposure.rescale_intensity(noisy_img, out_range=(0, 1))
+        
+        return noisy_img
 
     def __getitem__(self, index):
         sample_full_episode = False
 
         episode_id = self.episode_ids[index]
-        dataset_path = os.path.join(self.dataset_dir, f'data_{episode_id}.hdf5')
+        dataset_path = self.dataset_dir
         start_ts = 0
         unique_idx = 0
-        with h5py.File(dataset_path, 'r') as root:
-            base_path = f'data/demo_0'
+
+        with zarr.open(dataset_path, 'r') as root:
+            episode_ends = root['meta/episode_ends'][:]
+            end = episode_ends[episode_id]
+            start = 0 if episode_id == 0 else episode_ends[episode_id - 1]
+
             is_sim = True
 
-            ##### Find the last unique action so we don't make start_ts too large #########
-            _original_action = root[f'{base_path}/action'][()]
+            _original_action = root['/data/actions'][start:end]
             num_original_actions = len(_original_action)
             last_unique_action = _original_action[-1]
             unique_idx = num_original_actions
@@ -47,7 +70,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
             ################################################################################
 
 
-            original_action_shape = root[f'{base_path}/action'].shape
+            original_action_shape = _original_action.shape
             episode_len = original_action_shape[0]
             if sample_full_episode:
                 start_ts = 0
@@ -55,16 +78,25 @@ class EpisodicDataset(torch.utils.data.Dataset):
                 start_ts = np.random.choice(unique_idx)
             # get observation at start_ts only
             # User joint pos
-            qpos = root[f'{base_path}/observations/joint_pos'][start_ts]
+            qpos = root['/data/joint_pos'][start:end][start_ts]
             image_dict = dict()
+            noise_levels = [0.15, 0.1, 0.05, 0]
+            chosen_noise = random.choice(noise_levels)
             for cam_name in self.camera_names:
-                image_dict[cam_name] = root[f'{base_path}/observations/images/{cam_name}'][start_ts]
+                img = root[f'/data/{cam_name}'][start:end][start_ts]
+                if chosen_noise > 0:
+                    img = self.add_adaptive_noise(img, noise_level=chosen_noise)
+                    img = (img * 255).astype(np.uint8)
+                else:
+                    img = img.astype(np.uint8)
+                image_dict[cam_name] = img
+            
             # get all actions after and including start_ts
             if is_sim:
-                action = root[f'{base_path}/action'][start_ts:]
+                action = _original_action[start_ts:]
                 action_len = episode_len - start_ts
             else:
-                action = root[f'{base_path}/action'][max(0, start_ts - 1):] # hack, to make timesteps more aligned
+                action = _original_action[max(0, start_ts - 1):] # hack, to make timesteps more aligned
                 action_len = episode_len - max(0, start_ts - 1) # hack, to make timesteps more aligned
 
         self.is_sim = is_sim
@@ -85,26 +117,22 @@ class EpisodicDataset(torch.utils.data.Dataset):
         is_pad = is_pad[:15]
 
         # new axis for different cameras
+        # Process image data
         all_cam_images = []
         for cam_name in self.camera_names:
-            if cam_name == 'image':
-                all_cam_images.append(image_dict[cam_name].squeeze(0))
-            else:
-                all_cam_images.append(image_dict[cam_name])
-        all_cam_images = np.stack(all_cam_images, axis=0)
+            all_cam_images.append(image_dict[cam_name])
+        all_cam_images = np.stack(all_cam_images, axis=0).squeeze(0)
+        image_data = torch.from_numpy(all_cam_images.astype(np.uint8))
+        image_data = torch.einsum('k h w c -> k c h w', image_data)
+        assert image_data.dtype == torch.uint8
+        image_data = image_data / 255.0
 
         # construct observations
-        image_data = torch.from_numpy(all_cam_images.astype(np.uint8))
         qpos_data = torch.from_numpy(qpos).float()
         action_data = torch.from_numpy(padded_action).float()
         is_pad = torch.from_numpy(is_pad).bool()
 
-        # channel last
-        image_data = torch.einsum('k h w c -> k c h w', image_data)
-        assert image_data.dtype == torch.uint8
-
         # normalize image and change dtype to float
-        image_data = image_data / 255.0
         action_data = (action_data - self.norm_stats["action_mean"]) / self.norm_stats["action_std"]
         qpos_data = (qpos_data - self.norm_stats["qpos_mean"]) / self.norm_stats["qpos_std"]
 
@@ -113,7 +141,6 @@ class EpisodicDataset(torch.utils.data.Dataset):
 
 
 def get_norm_stats(dataset_dir, num_episodes):
-
     # Lists to store the means and stds of each episode
     action_means = []
     action_stds = []
@@ -122,15 +149,12 @@ def get_norm_stats(dataset_dir, num_episodes):
 
     example_qpos = None
 
-    for episode_idx in range(num_episodes):
-        dataset_path = os.path.join(dataset_dir, f'data_{episode_idx}.hdf5')
-        # print(f"Trying to load: {dataset_path}")
-        with h5py.File(dataset_path, 'r') as root:
-            base_path = f'data/demo_0'
-
-            qpos = root[f'{base_path}/observations/joint_pos'][()]
-            action = root[f'{base_path}/action'][()]
-            # print(f"Episode {episode_idx} action length: {len(action)}")
+    with zarr.open(dataset_dir, 'r') as root:
+        episode_ends = root['meta/episode_ends'][:]
+        start = 0
+        for episode_idx in range(num_episodes):
+            qpos = root['/data/joint_pos'][start:episode_ends[episode_idx]]
+            action = root['/data/actions'][start:episode_ends[episode_idx]]
 
             # Calculate mean and std for this episode's action data
             action_mean = np.mean(action, axis=0)
@@ -148,6 +172,8 @@ def get_norm_stats(dataset_dir, num_episodes):
 
             if example_qpos is None:
                 example_qpos = qpos
+
+            start = episode_ends[episode_idx]
 
     # Convert the lists to numpy arrays
     action_means = np.array(action_means)
@@ -178,7 +204,7 @@ def get_norm_stats(dataset_dir, num_episodes):
 def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_size_train, batch_size_val):
     # print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
-    train_ratio = 0.88
+    train_ratio = 0.92
     shuffled_indices = np.random.permutation(num_episodes)
     shuffled_indices = shuffled_indices[:total_episodes]
     train_indices = shuffled_indices[:int(train_ratio * total_episodes)]
