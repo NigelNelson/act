@@ -12,7 +12,7 @@ import IPython
 e = IPython.embed
 
 class EpisodicDataset(torch.utils.data.Dataset):
-    def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats, noise_std=0.1):
+    def __init__(self, episode_ids, dataset_dir, camera_names, norm_stats, noise_std=0.1, use_augmentation=False):
         super(EpisodicDataset).__init__()
         self.episode_ids = episode_ids
         self.dataset_dir = dataset_dir
@@ -20,7 +20,7 @@ class EpisodicDataset(torch.utils.data.Dataset):
         self.norm_stats = norm_stats
         self.is_sim = None
         self.__getitem__(0)  # initialize self.is_sim
-
+        self.use_augmentation = use_augmentation
     def __len__(self):
         return len(self.episode_ids)
 
@@ -80,8 +80,11 @@ class EpisodicDataset(torch.utils.data.Dataset):
             # User joint pos
             qpos = root['/data/joint_pos'][start:end][start_ts]
             image_dict = dict()
-            noise_levels = [0.15, 0.1, 0.05, 0]
-            chosen_noise = random.choice(noise_levels)
+            noise_levels = [0.15, 0.1, 0.05, 0] 
+            if self.use_augmentation:
+                chosen_noise = random.choice(noise_levels)
+            else:
+                chosen_noise = 0
             for cam_name in self.camera_names:
                 img = root[f'/data/{cam_name}'][start:end][start_ts]
                 if chosen_noise > 0:
@@ -201,7 +204,7 @@ def get_norm_stats(dataset_dir, num_episodes):
     return stats
 
 
-def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_size_train, batch_size_val):
+def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_size_train, batch_size_val, use_augmentation=False):
     # print(f'\nData from: {dataset_dir}\n')
     # obtain train test split
     train_ratio = 0.92
@@ -221,8 +224,8 @@ def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_siz
     #     norm_stats = pickle.load(file)
 
     # construct dataset and dataloader
-    train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats)
-    val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats)
+    train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats, use_augmentation=use_augmentation)
+    val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats, use_augmentation=use_augmentation)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
 

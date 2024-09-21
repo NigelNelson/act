@@ -33,7 +33,7 @@ def main(task, json_config):
     # Get current date in format YYYY-MM-DD-HH-MM
     date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}"
+    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_augmentation_{json_config.use_augmentation}"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -132,7 +132,7 @@ def main(task, json_config):
 
     total_episodes = task_config['total_episodes']
     train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, total_episodes, camera_names, 
-                                                           batch_size_train, batch_size_val)
+                                                           batch_size_train, batch_size_val, use_augmentation=json_config.use_augmentation)
 
     # save dataset stats
     if not os.path.isdir(ckpt_dir):
@@ -232,10 +232,10 @@ def main(task, json_config):
         wandb.log(wandb_summary)
 
         # Save checkpoint every 250 steps
-        if epoch % 1000 == 0:
+        if epoch % 250 == 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
-        if epoch % 500 == 0 and epoch > 2000:
+        if epoch % 250 == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
