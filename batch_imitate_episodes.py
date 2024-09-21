@@ -46,8 +46,8 @@ def main(rank, world_size, task, json_config):
     # Get current date in format YYYY-MM-DD-HH-MM
     date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-    if rank == 0:
-        wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_new3"
+    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_new3"
+    if rank == 0:   
         wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -149,11 +149,11 @@ def main(rank, world_size, task, json_config):
                                                            batch_size_train, batch_size_val, world_size, rank)
 
     # save dataset stats
-    if not os.path.isdir(ckpt_dir):
+    if not os.path.isdir(ckpt_dir) and rank == 0:
         os.makedirs(ckpt_dir)
-    stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
-    with open(stats_path, 'wb') as f:
-        pickle.dump(stats, f)
+        stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
+        with open(stats_path, 'wb') as f:
+            pickle.dump(stats, f)
 
     num_epochs = config['num_epochs']
     ckpt_dir = config['ckpt_dir']
