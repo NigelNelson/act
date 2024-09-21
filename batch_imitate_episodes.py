@@ -41,7 +41,7 @@ def main(task, json_config):
 
     camera_names = task_config['camera_names']
 
-    checkpoint_dir = f"/lustre/fs11/portfolios/healthcareeng/users/nigeln/rgb-act-weights/real_data/{wandb_id}"
+    checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights/real_data/{wandb_id}"
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
         'num_queries': json_config.chunk_size,  # You might want to make this configurable
