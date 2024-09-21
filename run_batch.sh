@@ -8,7 +8,7 @@ export TRANSFORMERS_CACHE=/lustre/fsw/portfolios/healthcareeng/users/nigeln/hf_h
 #   CUDA_VISIBLE_DEVICES=$i python batch_imitate_episodes.py "configs/config_grok_${i}.json" &
 # done
 
-CUDA_VISIBLE_DEVICES=0 python batch_imitate_episodes.py --config_file configs/config_3.json --task real_lift &
+python batch_imitate_episodes.py --config_file configs/config_3.json --task real_lift &
 
 # Wait for all background processes to complete
 wait
