@@ -46,7 +46,7 @@ def main(rank, world_size, task, json_config):
     # Get current date in format YYYY-MM-DD-HH-MM
     date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_new"
+    wandb_id = f"real-1-cam-{task}-lr_{json_config.learning_rate}_kl_{json_config.kl_weight}_chunk_{json_config.chunk_size}_b{json_config.batch_size}_alpha{json_config.alpha}_lamb{json_config.lamb}_new2"
     wandb.init(project="ACT-training", config=json_config, entity="nigelnel", id=wandb_id, resume="allow")
     set_seed(0)
 
@@ -248,7 +248,8 @@ def main(rank, world_size, task, json_config):
         summary_string = ''
         for k, v in epoch_summary.items():
             summary_string += f'{k}: {v.item():.3f} '
-        print(summary_string)
+        if rank == 0:
+            print(summary_string)
         wandb_summary['train_loss'] = epoch_train_loss
         wandb_summary['epoch'] = epoch
         wandb_summary['val_loss'] = epoch_val_loss
@@ -264,6 +265,9 @@ def main(rank, world_size, task, json_config):
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.module.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
+
+        # barrier
+        dist.barrier()
 
     if rank == 0:
         ckpt_path = os.path.join(ckpt_dir, f'policy_last.ckpt')
