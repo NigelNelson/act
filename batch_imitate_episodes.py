@@ -42,6 +42,7 @@ def main(task, json_config):
     camera_names = task_config['camera_names']
 
     checkpoint_dir = f"/lustre/fsw/portfolios/healthcareeng/users/nigeln/rgb-act-weights/real_data/{wandb_id}"
+
     args = {
         'lr': json_config.learning_rate,  # You might want to make this configurable
         'num_queries': json_config.chunk_size,  # You might want to make this configurable
@@ -49,7 +50,7 @@ def main(task, json_config):
         'kl_weight': json_config.kl_weight,  # You might want to make this configurable
         'hidden_dim': 512,  # You might want to make this configurable
         "batch_size": json_config.batch_size,
-        "num_epochs": 8000,
+        "num_epochs": 12000,
         'dim_feedforward': 3200,  # You might want to make this configurable
         'lr_backbone': 1e-5,
         'backbone': 'resnet18',
@@ -176,32 +177,33 @@ def main(task, json_config):
     alpha = json_config.alpha
     lamb = json_config.lamb
 
+    summary_string = ''
+    wandb_summary = {}
     for epoch in tqdm(range(start_epoch, num_epochs)):
         print(f'\nEpoch {epoch}')
         wandb_summary = {}
         is_best_val = False
         # validation
-        with torch.inference_mode():
-            policy.eval()
-            epoch_dicts = []
-            for batch_idx, data in enumerate(val_dataloader):
-                forward_dict = forward_pass(data, policy)
-                epoch_dicts.append(forward_dict)
-            epoch_summary = compute_dict_mean(epoch_dicts)
-            validation_history.append(epoch_summary)
+        if epoch % 10 == 0 and epoch > 0:
+            with torch.inference_mode():
+                policy.eval()
+                epoch_dicts = []
+                for batch_idx, data in enumerate(val_dataloader):
+                    forward_dict = forward_pass(data, policy)
+                    epoch_dicts.append(forward_dict)
+                epoch_summary = compute_dict_mean(epoch_dicts)
+                validation_history.append(epoch_summary)
 
-            epoch_val_loss = epoch_summary['loss']
-            if epoch_val_loss < min_val_loss:
-                is_best_val = True
-                min_val_loss = epoch_val_loss
-                best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.state_dict()))
-        print(f'Val loss:   {epoch_val_loss:.5f}')
-        summary_string = ''
-        wandb_summary = {}
-        for k, v in epoch_summary.items():
-            summary_string += f'{k}: {v.item():.3f} '
-            wandb_summary[k] = v.item()
-        print(summary_string)
+                epoch_val_loss = epoch_summary['loss']
+                if epoch_val_loss < min_val_loss:
+                    is_best_val = True
+                    min_val_loss = epoch_val_loss
+                    best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.state_dict()))
+            print(f'Val loss:   {epoch_val_loss:.5f}')
+            for k, v in epoch_summary.items():
+                summary_string += f'{k}: {v.item():.3f} '
+                wandb_summary[k] = v.item()
+            print(summary_string)
 
         # training
         policy.train()
@@ -232,10 +234,10 @@ def main(task, json_config):
         wandb.log(wandb_summary)
 
         # Save checkpoint every 250 steps
-        if epoch % 250 == 0:
+        if epoch % 250 == 0 and epoch > 0:
             save_checkpoint(epoch, policy, optimizer, train_history, validation_history, best_ckpt_info, ckpt_dir, seed, grads)
 
-        if epoch % 250 == 0:
+        if epoch % 250 == 0 and epoch > 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)

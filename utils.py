@@ -6,7 +6,6 @@ from torch.utils.data import TensorDataset, DataLoader
 import pickle
 import random
 import zarr
-from skimage import exposure
 
 import IPython
 e = IPython.embed
@@ -80,18 +79,9 @@ class EpisodicDataset(torch.utils.data.Dataset):
             # User joint pos
             qpos = root['/data/joint_pos'][start:end][start_ts]
             image_dict = dict()
-            noise_levels = [0.15, 0.1, 0.05, 0] 
-            if self.use_augmentation:
-                chosen_noise = random.choice(noise_levels)
-            else:
-                chosen_noise = 0
+
             for cam_name in self.camera_names:
                 img = root[f'/data/{cam_name}'][start:end][start_ts]
-                if chosen_noise > 0:
-                    img = self.add_adaptive_noise(img, noise_level=chosen_noise)
-                    img = (img * 255).astype(np.uint8)
-                else:
-                    img = img.astype(np.uint8)
                 image_dict[cam_name] = img
             
             # get all actions after and including start_ts
@@ -222,12 +212,11 @@ def load_data(dataset_dir, num_episodes, total_episodes, camera_names, batch_siz
     # # Load the stats dictionary from the file
     # with open(file_path, "rb") as file:
     #     norm_stats = pickle.load(file)
-
     # construct dataset and dataloader
     train_dataset = EpisodicDataset(train_indices, dataset_dir, camera_names, norm_stats, use_augmentation=use_augmentation)
     val_dataset = EpisodicDataset(val_indices, dataset_dir, camera_names, norm_stats, use_augmentation=use_augmentation)
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=1)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_train, shuffle=True, pin_memory=True, num_workers=16, prefetch_factor=2)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size_val, shuffle=True, pin_memory=True, num_workers=16, prefetch_factor=2)
 
     return train_dataloader, val_dataloader, norm_stats, train_dataset.is_sim
 
